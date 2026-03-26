@@ -1,0 +1,9 @@
+pytest
+pytest-asyncio
+pytest-aiohttp
+blake3
+lark
+aiohttp
+yarl
+
+

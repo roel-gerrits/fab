@@ -1,0 +1,36 @@
+%import common.CNAME 
+%import common.WS
+%import common.ESCAPED_STRING
+
+COMMENT: /#[^\n]*/
+
+%ignore WS
+%ignore COMMENT
+
+listing: assignment*
+
+string: ESCAPED_STRING
+name: CNAME
+
+assignment: name "=" expression
+
+
+?expression: string 
+           | call
+           | variable
+           | list 
+           | attributeref 
+
+
+variable: name
+
+list: "[" [expression ("," expression)* [","] ] "]"
+
+attributeref: expression "." name
+
+call: expression "(" [ call_args ] ")"
+call_args: (arg ("," arg)* ["," kwarg ("," kwarg)* ] [","] ) 
+         | (kwarg ("," kwarg)* [","] ) 
+?arg: expression
+kwarg: name "=" expression
+

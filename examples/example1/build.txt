@@ -1,0 +1,16 @@
+
+
+opus = extract(http_get("https://github.com/xiph/opus/archive/refs/tags/v1.6.1.tar.gz"))
+opus2 = http_archive("https://github.com/xiph/opus/archive/refs/tags/v1.6.1.tar.gz")
+
+##################
+
+test = run(exe)
+exe = link("main", [obj])
+obj = compile(main)
+main = path("main.cpp")
+
+
+
+
+

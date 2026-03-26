@@ -1,0 +1,46 @@
+
+
+gcc = load("tools.py").gcc
+gcc = load("tools.txt").gcc
+gcc = load("../../tools.txt").gcc
+gcc = load(download("http://lol.com/gcc.py"))
+gcc = load("http://lol.com/gcc.py")
+
+x = load_from_file("tools.txt")
+
+
+# future extension: tables
+# tools = {
+# 	aaa = "asdf",
+# 	bbb = x,
+# 	ccc = x.y,
+# 	}
+
+sources = [
+	path("main.cpp"),
+	path("lib.cpp"),
+	]
+
+platform1_exe = gcc1.link(
+	"main",
+	objects=map(partial(gcc1.compile, includes=includes), sources)
+	# or
+	objects=[gcc1.compile(s, includes=includes) for s in sources]
+)
+
+
+objects = [gcc.compile(src) for src in sources]
+
+exe = gcc.link(
+	outputname="main",
+	objects=[
+		gcc.compile(src="main.cpp"),
+		gcc.compile(src="lib.cpp"),
+	],
+    lflags=["-Wall", "-Werror"]
+)
+
+
+
+
+
