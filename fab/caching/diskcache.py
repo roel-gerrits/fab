@@ -1,8 +1,6 @@
-import shutil
-import string
 from typing import override
-from .abc import Cache, Key
 from pathlib import Path
+from ..model import Cache
 
 from ..util.string_slices import string_slices
 from ..util.hash_path import hash_path
@@ -23,21 +21,21 @@ class DiskCache(Cache):
         self.__blobs = root / "v1/blobs"
         self.__blobs.mkdir(parents=True, exist_ok=True)
 
-    def __get_op_path(self, op_key: Key) -> Path:
-        key_parts = string_slices(op_key.as_hex(), 2, 2)
-        return self.__ops / key_parts[0] / key_parts[1] / op_key.as_hex()
+    def __get_op_path(self, op_key: bytes) -> Path:
+        key_parts = string_slices(op_key.hex(), 2, 2)
+        return self.__ops / key_parts[0] / key_parts[1] / op_key.hex()
 
     def __get_blob_path(self, blob_key: bytes) -> Path:
         key_parts = string_slices(blob_key.hex(), 2, 2)
         return self.__blobs / key_parts[0] / key_parts[1] / blob_key.hex()
 
     @override
-    def has(self, op_key: Key) -> bool:
+    def has(self, op_key: bytes) -> bool:
         op_path = self.__get_op_path(op_key)
         return op_path.exists()
 
     @override
-    def get_path(self, op_key: Key) -> Path:
+    def get_path(self, op_key: bytes) -> Path:
         op_path = self.__get_op_path(op_key)
         if not op_path.is_dir():
             raise DiskCacheError(f"{op_path} does not exist")
@@ -51,7 +49,7 @@ class DiskCache(Cache):
         return blob_path
 
     @override
-    def store_path(self, op_key: Key, path: Path) -> Path:
+    def store_path(self, op_key: bytes, path: Path) -> Path:
         if not path.exists():
             raise DiskCacheError(f"Cannot store non-existent path {path} in cache")
 
@@ -66,7 +64,7 @@ class DiskCache(Cache):
         op_path = self.__get_op_path(op_key)
         if op_path.exists():
             raise DiskCacheError(
-                f"Operation with key '{op_key.as_hex()}' already exists in cache"
+                f"Operation with key '{op_key.hex()}' already exists in cache"
             )
 
         op_path.mkdir(parents=True, exist_ok=True)

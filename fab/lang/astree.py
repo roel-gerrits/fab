@@ -2,9 +2,6 @@ import abc
 from typing import override
 
 
-from ..data.base import Object
-
-
 class AstNode(abc.ABC):
     pass
 
@@ -26,17 +23,6 @@ class Name(AstNode):
 
 class Expression(AstNode, abc.ABC):
     pass
-
-
-# class Constant(Expression):
-#     value: Object
-#
-#     def __init__(self, value: Object) -> None:
-#         self.value = value
-#
-#     @override
-#     def __repr__(self):
-#         return f'<Constant {self.value}>'
 
 
 class LiteralString(Expression):

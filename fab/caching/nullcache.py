@@ -1,18 +1,16 @@
 from pathlib import Path
 from typing import override
-from .abc import Cache, Key
-from ..data.base import Object
-
+from ..model import Cache
 
 class NullCache(Cache):
     @override
-    def has(self, op_key: Key) -> bool:
+    def has(self, op_key: bytes) -> bool:
         return False
 
     @override
-    def get_path(self, op_key: Key) -> Path:
+    def get_path(self, op_key: bytes) -> Path:
         raise KeyError()
 
     @override
-    def store_path(self, op_key: Key, path: Path) -> Path:
+    def store_path(self, op_key: bytes, path: Path) -> Path:
         raise NotImplementedError()

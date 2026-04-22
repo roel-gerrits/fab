@@ -3,7 +3,6 @@ from pathlib import Path
 
 from ..util.hash_path import hash_path
 from ..util.temp_file_structure import TempFileStructure
-from .abc import Key
 from .diskcache import DiskCache
 
 
@@ -21,7 +20,7 @@ def test_store_has_get_path():
     ) as root:
         cache = DiskCache(root / "cache_dir")
         file = root / "objects/file1"
-        op_key = Key.from_hex("abcdef1234567890")
+        op_key = bytes.fromhex("abcdef1234567890")
         original_key = path_key(file)
 
         assert not cache.has(op_key)
@@ -45,8 +44,8 @@ def test_store_again():
         cache = DiskCache(root / "cache_dir")
         file1 = root / "objects1/file"
         file2 = root / "objects2/file"
-        op1_key = Key.from_hex("abcd01")
-        op2_key = Key.from_hex("abcd02")
+        op1_key = bytes.fromhex("abcd01")
+        op2_key = bytes.fromhex("abcd02")
         cached_file1 = cache.store_path(op1_key, file1)
         cached_file2 = cache.store_path(op2_key, file2)
 

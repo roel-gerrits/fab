@@ -1,14 +1,20 @@
-from ..data.base import PathObj, String
-from .decorator import operation
-from .http_get import http_get
-from .extract import extract
+from typing import Any, override
 
-from ..building import Context
+from ..model import Operation, OperationContext
+from .extract import Extract
+from .http_get import HttpGet
 
 
-@operation
-async def http_archive(context: Context, url: String) -> PathObj:
-    archive = await http_get.execute(context, args=[url], kwargs={})
-    contents = await extract.execute(context, args=[archive], kwargs={})
-    assert isinstance(contents, PathObj)
-    return contents
+class HttpArchive(Operation):
+    def __init__(self, url: str):
+        self.__url = url
+
+    @override
+    async def execute(self, context: OperationContext) -> Any:
+        http_get = HttpGet(self.__url)
+        archive = await http_get.execute(context)
+
+        extract = Extract(archive)
+        result = await extract.execute(context)
+
+        return result

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import pathlib
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-import pathlib
-from typing import override
+from typing import Any, override
+
+from ..model import Operation
 
 
 class Object(ABC):
@@ -64,6 +66,23 @@ class PathObj(Object):
         return self.path == other.path
 
 
+class EvaluationContext(ABC):
+    @abstractmethod
+    def apply_filename(self, path: pathlib.Path) -> None: ...
+
+    @abstractmethod
+    def get_current_file(self) -> pathlib.Path: ...
+
+    @abstractmethod
+    async def execute_operation(self, operation: Operation) -> Any: ...
+
+    @property
+    @abstractmethod
+    def buildins(self) -> Mapping[str, Object]: ...
+
+
 class Function(Object, ABC):
     @abstractmethod
-    def call(self, args: list[Object], kwargs: dict[str, Object]) -> Object: ...
+    async def call(
+        self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
+    ) -> Object: ...

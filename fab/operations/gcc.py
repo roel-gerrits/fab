@@ -1,42 +1,77 @@
-from .decorator import operation
-from ..data.base import PathObj, List, String
-from ..building import Context, create_key
 import asyncio
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any, override
+
+from blake3 import blake3
+
+from ..model import Operation, OperationContext
+from ..util.hash_objects import hash_objects
 
 
-@operation
-async def gcc_compile(context: Context, source: PathObj) -> PathObj:
+class GccCompile(Operation):
+    def __init__(self, source: Path, includes: Sequence[Path]):
+        self.__source = source
+        self.__includes = includes
 
-    key = create_key(context, [b"Compile", source])
+    @override
+    async def execute(self, context: OperationContext) -> Any:
+        key = hash_objects(blake3(), "gcc_compile", self.__source)
+        if context.cache_check(key):
+            return context.cache_load_path(key)
 
-    if context.cache.has(key):
-        return PathObj(context.cache.get_path(key))
+        sandbox = context.get_sandbox()
+        source_link = sandbox / self.__source.name
+        source_link.symlink_to(self.__source.absolute())
 
-    sandbox = context.sandbox_factory.create()
+        outputname = self.__source.with_suffix(".o").name
 
-    outputname = source.path.name + ".o"
-    cmd = f"gcc -c -o {outputname} {source.path}"
-    print(cmd)
-    result = await asyncio.create_subprocess_shell(cmd, cwd=sandbox)
-    await result.wait()
+        cmd = [
+            "gcc",
+            "-c",
+            *[f"-I {str(p.absolute())}" for p in self.__includes],
+            "-o",
+            outputname,
+            str(source_link.name),
+        ]
+        print(cmd)
 
-    cached_path = context.cache.store_path(key, sandbox / outputname)
-    return PathObj(cached_path)
+        result = await asyncio.create_subprocess_shell(" ".join(cmd), cwd=sandbox)
+        returncode = await result.wait()
 
-@operation
-async def gcc_link(context: Context, outputname: String, objects: List) -> PathObj:
+        if returncode != 0:
+            exit(1)
 
-    key = create_key(context, [b"Link", objects])
+        cached_path = context.cache_store_path(key, sandbox / outputname)
+        return cached_path
 
-    if context.cache.has(key):
-        return PathObj(context.cache.get_path(key))
 
-    sandbox = context.sandbox_factory.create()
+class GccLink(Operation):
+    def __init__(self, outputname: str, objects: Sequence[Path]):
+        self.__outputname = outputname
+        self.__objects = objects
 
-    cmd = f"gcc -o {outputname.value} {' '.join([str(entry.path.absolute()) for entry in objects.items])}"
-    print(cmd)
-    result = await asyncio.create_subprocess_shell(cmd, cwd=sandbox)
-    await result.wait()
+    @override
+    async def execute(self, context: OperationContext) -> Any:
+        key = hash_objects(blake3(), "gcc_link", self.__objects)
+        if context.cache_check(key):
+            return context.cache_load_path(key)
 
-    cached_path = context.cache.store_path(key, sandbox / outputname.value)
-    return PathObj(cached_path)
+        sandbox = context.get_sandbox()
+
+        cmd = [
+            "gcc",
+            "-o",
+            self.__outputname,
+            *(str(p.absolute()) for p in self.__objects),
+        ]
+        print(cmd)
+
+        result = await asyncio.create_subprocess_shell(" ".join(cmd), cwd=sandbox)
+        returncode = await result.wait()
+
+        if returncode != 0:
+            exit(1)
+
+        cached_path = context.cache_store_path(key, sandbox / self.__outputname)
+        return cached_path
