@@ -51,6 +51,12 @@ class Transformer(visitors.Transformer):
     def list(self, args: list[astree.Expression]):
         return astree.List(args)
 
+    def list_comprehension(
+        self, args: tuple[astree.Expression, astree.Name, astree.Expression]
+    ):
+        expression, target, iterable = args
+        return astree.ListComprehension(expression, target, iterable)
+
     def attributeref(self, args: tuple[astree.Expression, astree.Name]):
         expr, name = args
         return astree.AttributeRef(expr, name)

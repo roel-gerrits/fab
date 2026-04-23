@@ -33,7 +33,7 @@ async def evaluate_source(
     assignments = parse(source)
     target = assignments[name]
     ctx = context or DummyEvaluationContext(buildins=buildins)
-    return await evaluate(target, assignments, ctx)
+    return await evaluate(target, assignments, {}, ctx)
 
 
 @pytest.mark.asyncio
@@ -70,6 +70,12 @@ async def test_evaluate_list():
             String("c_str"),
         ]
     )
+
+
+@pytest.mark.asyncio
+async def test_evaluate_list_comprehension():
+    obj = await evaluate_source('x=[x for x in ["a", "b", "c"]]', "x")
+    print(obj)
 
 
 @pytest.mark.skip

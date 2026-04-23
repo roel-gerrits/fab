@@ -20,7 +20,6 @@ from .lang.evaluator import evaluate_context
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("action", nargs="?", type=str)
 parser.add_argument("target", nargs="?", type=str)
 parser.add_argument("-f", "--file", default="build.txt", type=Path)
 

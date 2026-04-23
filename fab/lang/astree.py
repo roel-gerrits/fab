@@ -1,4 +1,5 @@
 import abc
+from math import exp
 from typing import override
 
 
@@ -78,6 +79,21 @@ class List(Expression):
     @override
     def __repr__(self):
         return f"<List {','.join((str(x) for x in self.items))}>"
+
+
+class ListComprehension(Expression):
+    expression: Expression
+    target: Name
+    iterable: Expression
+
+    def __init__(self, expression: Expression, target: Name, iterable: Expression):
+        self.expression = expression
+        self.target = target
+        self.iterable = iterable
+
+    @override
+    def __repr__(self) -> str:
+        return f"<ListComprehension ...>"
 
 
 class AttributeRef(Expression):

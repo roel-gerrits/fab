@@ -10,3 +10,8 @@ def test_assignment_twice():
 def test_comments():
     assignments = parse("x=X \n # y=Y \n z=Z")
     assert assignments.keys() == {"x", "z"}
+
+
+def test_list_comprehension():
+    result = parse('x=[x for x in ["a", "b", "c"]]')
+    print(result)

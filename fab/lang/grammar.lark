@@ -19,12 +19,15 @@ assignment: name "=" expression
            | call
            | variable
            | list 
+           | list_comprehension
            | attributeref 
 
 
 variable: name
 
 list: "[" [expression ("," expression)* [","] ] "]"
+
+list_comprehension: "[" expression "for" name "in" expression "]"
 
 attributeref: expression "." name
 

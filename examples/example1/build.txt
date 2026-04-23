@@ -1,37 +1,15 @@
 
-
-stuff = load("stuff.txt")
-
-opus = extract(stuff.opus_archive)
-
-#opus = http_get("https://github.com/xiph/opus/archive/refs/tags/v1.6.1.tar.gz")
-#opus = extract(http_get("https://github.com/xiph/opus/archive/refs/tags/v1.6.1.tar.gz"))
-opus2 = http_archive("https://github.com/xiph/opus/archive/refs/tags/v1.6.1.tar.gz")
-
-##################
-
-sources = load("srcs/srcs.txt")
-
-test = run(exe)
-#exe = gcc_link("main", objs)
-
 includes = [
 	path(".")
 ]
 
-exe = gcc_link("main", [
-	gcc_compile(path("lib.cpp"), includes=includes),
-	gcc_compile(path("main.cpp"), includes=includes),
-])
-
-
 sources = [
 	path("main.cpp"),
 	path("lib.cpp"),
-	]
+]
 
 objs = [gcc_compile(src, includes=includes) for src in sources]
-exe2 = gcc_link("main", 
+exe = gcc_link("main", objs)
 
 
 
