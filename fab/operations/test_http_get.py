@@ -1,7 +1,7 @@
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
-from typing import override
+from typing import Any, override
 
 import aiohttp
 import aiohttp.test_utils
@@ -9,7 +9,7 @@ import aiohttp.web
 import pytest
 
 from ..caching import DiskCache
-from ..model import OperationContext
+from ..model import GlobalState, OperationContext
 from .http_get import HttpGet
 
 
@@ -41,6 +41,14 @@ class DummyOperationContext(OperationContext):
     @override
     def cache_store_path(self, key: bytes, path: Path) -> Path:
         return self.__cache.store_path(key, path)
+
+    @override
+    def get_param(self, key: str) -> Any:
+        raise NotImplementedError
+
+    @override
+    def get_global_state[T: GlobalState](self, state_class: type[T]) -> T:
+        raise NotImplementedError
 
 
 class FileServer:

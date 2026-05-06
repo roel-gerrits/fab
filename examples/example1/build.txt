@@ -1,17 +1,21 @@
 
 includes = [
-	path(".")
+	path("."),
+	path("liba"),
 ]
 
 sources = [
 	path("main.cpp"),
 	path("lib.cpp"),
+	path("liba/liba.cpp"),
 ]
 
 objs = [gcc_compile(src, includes=includes) for src in sources]
+
 exe = gcc_link("main", objs)
 
 
+compile_commands = link(gcc_collect_compile_commands(exe))
 
-
+tidy = [clang_tidy(src, compile_commands) for src in sources]
 

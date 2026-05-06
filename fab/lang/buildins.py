@@ -2,7 +2,7 @@ from copy import copy
 from pathlib import Path
 from typing import override
 
-from fab.operations.gcc import GccCompile, GccLink
+from fab.operations.gcc import GccCompile, GccLink, GccCollectCompileCommands
 
 from ..operations import Extract, HttpArchive, HttpGet
 from .data import EvaluationContext, Function, List, Object, PathObj, String
@@ -39,6 +39,30 @@ class PathFunc(Function):
             raise EvaluationError(f"No such path '{path_str}' ('{path}')")
 
         return PathObj(path)
+
+
+class LinkFunc(Function):
+    @override
+    async def call(
+        self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
+    ) -> Object:
+        assert isinstance(args[0], PathObj)
+        target_path = args[0].path
+
+        destination = context.get_current_file().parent
+        link_path = destination / target_path.name
+
+        if link_path.exists():
+            if not link_path.is_symlink():
+                raise EvaluationError(
+                    f"Link target already exists and is not a symlink '{link_path}'"
+                )
+
+            link_path.unlink()
+
+        link_path.symlink_to(target_path)
+
+        return PathObj(link_path)
 
 
 class HttpGetFunc(Function):
@@ -102,5 +126,15 @@ class GccLinkFunc(Function):
         objects = [item.path for item in args[1].items]
 
         op = GccLink(outputname, objects)
+        result = await context.execute_operation(op)
+        return PathObj(result)
+
+
+class GccCollectCompileCommandsFunc(Function):
+    @override
+    async def call(
+        self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
+    ) -> Object:
+        op = GccCollectCompileCommands()
         result = await context.execute_operation(op)
         return PathObj(result)
