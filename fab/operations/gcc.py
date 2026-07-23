@@ -10,7 +10,7 @@ from blake3 import blake3
 from fab.lang import data
 
 
-from ..model import Operation, OperationContext, GlobalState
+from ..model import Operation, OperationContext 
 from ..util.hash_objects import hash_objects
 
 
@@ -20,8 +20,8 @@ class CompileObject:
     arguments: list[str]
 
 
-class CompileCommandsCollector(GlobalState):
-    def __init__(self, context: OperationContext) -> None:
+class CompileCommandsCollector:
+    def __init__(self) -> None:
         self.__commands: list[CompileObject] = []
 
     def add_compile_object(self, obj: CompileObject):
@@ -29,26 +29,6 @@ class CompileCommandsCollector(GlobalState):
 
     def get_compile_commands(self) -> list[CompileObject]:
         return self.__commands
-
-    # @override
-    # def done(self):
-    #     if not self.__do_collect:
-    #         return
-    #
-    #     with open("compile_commands.json", "w") as f:
-    #         json.dump(
-    #             [
-    #                 {
-    #                     "file": str(obj.file),
-    #                     "arguments": obj.arguments,
-    #                     "output": str(obj.output),
-    #                 }
-    #                 for obj in self.__commands
-    #             ],
-    #             f,
-    #             indent=4,
-    #         )
-    #
 
 
 def flatten(lst: list[Any]) -> list[Any]:
@@ -82,7 +62,7 @@ class GccCompile(Operation):
             )
         )
 
-        key = hash_objects(blake3(), "g++_compile", self.__source)
+        key = hash_objects(blake3(), "g++_compile", self.__source, self.__includes)
         if context.cache_check(key):
             return context.cache_load_path(key)
 
@@ -120,7 +100,7 @@ class GccLink(Operation):
 
     @override
     async def execute(self, context: OperationContext) -> Any:
-        key = hash_objects(blake3(), "g++_link", self.__objects)
+        key = hash_objects(blake3(), "g++_link", self.__outputname, self.__objects)
         if context.cache_check(key):
             return context.cache_load_path(key)
 

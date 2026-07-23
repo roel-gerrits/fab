@@ -11,10 +11,15 @@ def chunkify_path(base_path: Path) -> Iterable[bytes]:
         subpath = path.relative_to(base_path.parent)
         yield str(subpath).encode()
         if path.is_file():
+            yield b"FILE"
             yield path.read_bytes()
         elif path.is_dir():
+            yield b"DIR"
             for child in sorted(path.iterdir()):
                 yield from visit_entry(child)
+        elif path.is_symlink():
+            yield b"SYMLINK"
+            yield bytes(path.readlink())
         else:
             raise NotImplementedError(f"Unsupported path type: {path}")
 

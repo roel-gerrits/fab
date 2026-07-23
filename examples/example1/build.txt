@@ -1,21 +1,41 @@
-
 includes = [
-	path("."),
-	path("liba"),
+    path("."),
+    path("liba"),
 ]
 
 sources = [
-	path("main.cpp"),
-	path("lib.cpp"),
-	path("liba/liba.cpp"),
+    path("main.cpp"),
+    path("lib.cpp"),
+    path("liba/liba.cpp"),
 ]
 
-objs = [gcc_compile(src, includes=includes) for src in sources]
+# objs = [gcc_compile(src, includes=includes) for src in sources]
+#
+# exe = gcc_link("main", objs)
+#
+#
+# # compile_commands = link(gcc_collect_compile_commands(exe))
+#
+# tidy = [clang_tidy(src, compile_commands) for src in sources]
 
-exe = gcc_link("main", objs)
+
+# toolchain = containerized_gcc(
+#     "ghcr.io/tttapa/docker-arm-cross-toolchain:aarch64-rpi3-linux-gnu-gcc15-1.1.0",
+#     target_triplet="aarch64-rpi3-linux-gnu",
+# )
+
+toolchain = containerized_gcc(
+    "mcr.microsoft.com/devcontainers/cpp"
+    # target_triplet="aarch64-rpi3-linux-gnu",
+)
+
+objs2 = [toolchain.compile(src, includes=includes) for src in sources]
+exe2 = toolchain.link("main", objs2)
 
 
-compile_commands = link(gcc_collect_compile_commands(exe))
+compile_commands = link(gcc_collect_compile_commands(exe2))
 
-tidy = [clang_tidy(src, compile_commands) for src in sources]
-
+tool = containerized_tool(
+    "image",
+    "some_tool <arg1> <arg2>",
+)

@@ -81,6 +81,10 @@ class EvaluationContext(ABC):
     def buildins(self) -> Mapping[str, Object]: ...
 
 
+class FunctionCallError(RuntimeError):
+    pass
+
+
 class Function(Object, ABC):
     @abstractmethod
     async def call(

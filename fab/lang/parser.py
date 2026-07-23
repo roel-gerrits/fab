@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from abc import ABC
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any
 
-from lark import Lark, Token, visitors
+from lark import Lark, Token, Tree
 
 from . import astree
 
@@ -11,63 +13,87 @@ def index_of[T](it: Iterable[T], predicate: Callable[[T], bool], default: int = 
     return next((i for i, e in enumerate(it) if predicate(e)), default)
 
 
-class Transformer(visitors.Transformer):
-    def string(self, args: tuple[Token]):
-        (value,) = args
-        return astree.LiteralString(value[1:-1])
+class TreeTransformer(ABC):
+    source_position: astree.SourcePosition
+    current_node: Tree
 
-    def name(self, args: tuple[Token]):
-        name = str(args[0].value)
-        return astree.Name(name)
+    def transform(self, node: Tree) -> Any:
+        children = [
+            self.transform(child) for child in node.children if isinstance(child, Tree)
+        ]
+
+        self.source_position = astree.SourcePosition(
+            node.meta.line,
+            node.meta.column,
+            node.meta.end_line,
+            node.meta.end_column,
+        )
+
+        handler = getattr(self, node.data)
+        if not handler:
+            raise NotImplementedError(f"Handler for {node.data} is not implemented")
+
+        self.current_node = node
+
+        return handler(*children)
+
+
+class AstTransformer(TreeTransformer):
+    def string(self):
+        token: Token = self.current_node.children[0]
+        value = token.value
+        return astree.LiteralString(self.source_position, value[1:-1])
+
+    def name(self):
+        token: Token = self.current_node.children[0]
+        name = token.value
+        return astree.Name(self.source_position, name)
 
     def call(
         self,
-        args: tuple[
-            astree.Expression,
-            tuple[list[astree.Expression], dict[str, astree.Expression]] | None,
-        ],
+        target: astree.Expression,
+        args: tuple[list[astree.Expression], dict[str, astree.Expression]]
+        | None = None,
     ):
-        target = args[0]
 
-        (pos_args, key_args) = args[1] if args[1] else ([], {})
-        return astree.Call(target, pos_args, key_args)
+        (pos_args, key_args) = args if args else ([], {})
+        return astree.Call(self.source_position, target, pos_args, key_args)
 
-    def call_args(
-        self, args: Sequence[astree.Expression | tuple[str, astree.Expression]]
-    ):
+    def call_args(self, *args: astree.Expression | tuple[str, astree.Expression]):
         args = [arg for arg in args if arg]
         first_kw_position = index_of(args, lambda a: isinstance(a, tuple), len(args))
         pos_args: list[astree.Expression] = args[0:first_kw_position]  # pyright: ignore[reportAssignmentType]
         key_args: list[tuple[str, astree.Expression]] = args[first_kw_position:]  # pyright: ignore[reportAssignmentType]
         return pos_args, dict(key_args)
 
-    def kwarg(self, args: tuple[str, astree.Expression]):
-        return (args[0], args[1])
+    def kwarg(self, name: str, expr: astree.Expression):
+        return (name, expr)
 
-    def variable(self, args: tuple[astree.Name]):
-        (name,) = args
-        return astree.Variable(name)
+    def variable(self, name: astree.Name):
+        return astree.Variable(self.source_position, name)
 
-    def list(self, args: list[astree.Expression]):
-        return astree.List(args)
+    def list(self, *items: astree.Expression):
+        return astree.List(self.source_position, list(items))
 
     def list_comprehension(
-        self, args: tuple[astree.Expression, astree.Name, astree.Expression]
+        self,
+        expression: astree.Expression,
+        target: astree.Name,
+        iterable: astree.Expression,
     ):
-        expression, target, iterable = args
-        return astree.ListComprehension(expression, target, iterable)
+        return astree.ListComprehension(
+            self.source_position, expression, target, iterable
+        )
 
-    def attributeref(self, args: tuple[astree.Expression, astree.Name]):
-        expr, name = args
-        return astree.AttributeRef(expr, name)
+    def attributeref(self, expr: astree.Expression, name: astree.Name):
+        return astree.AttributeRef(self.source_position, expr, name)
 
-    def assignment(self, args: tuple[str, astree.Expression]):
-        name, expression = args
+    def assignment(self, name: astree.Name, expression: astree.Expression):
         return (name, expression)
 
-    def listing(self, args: list[tuple[astree.Name, astree.Expression]]):
+    def listing(self, *entries: tuple[astree.Name, astree.Expression]):
         assignments: dict[str, astree.Expression] = dict()
-        for name, expression in args:
+        for name, expression in entries:
             if name.name in assignments:
                 raise RuntimeError(f"Name '{name}' is already assigned")
             assignments[name.name] = expression
@@ -80,10 +106,11 @@ __parser = Lark.open_from_package(
     "grammar.lark",
     start="listing",
     parser="lalr",
-    transformer=Transformer(),
+    propagate_positions=True,
 )
 
 
 def parse(source: str) -> Mapping[str, astree.Expression]:
-    assignments: dict[str, astree.Expression] = __parser.parse(source)
+    tree = __parser.parse(source)
+    assignments: dict[str, astree.Expression] = AstTransformer().transform(tree)
     return assignments

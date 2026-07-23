@@ -1,0 +1,14 @@
+[project]
+name = "fab-build"
+version = "0.0.1"
+dependencies = [
+    "blake3",
+    "lark",
+    "aiohttp",
+    "yarl",
+    "xdg-base-dirs",
+]
+
+
+[project.scripts]
+fab = "fab:cli.main"

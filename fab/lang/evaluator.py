@@ -1,13 +1,35 @@
 from collections.abc import Mapping, Sequence
+import traceback
 from typing import override
 
 from ..lang import astree
-from .data import EvaluationContext, Function, List, Object, String
+from .data import EvaluationContext, Function, FunctionCallError, List, Object, String
 from .parser import parse
 
 
 class EvaluationError(RuntimeError):
-    pass
+    context: EvaluationContext
+    expr: astree.AstNode
+    msg: str
+
+    def __init__(
+        self, context: EvaluationContext, expr: astree.AstNode, msg: str
+    ) -> None:
+        self.context = context
+        self.expr = expr
+        self.msg = msg
+        super().__init__(msg)
+
+    @override
+    def __str__(self) -> str:
+        return f"{self.msg}: {str(self.expr)}"
+
+
+class FunctionEvaluationError(EvaluationError):
+    def __init__(
+        self, context: EvaluationContext, expr: astree.AstNode, reason: str
+    ) -> None:
+        super().__init__(context, expr, reason)
 
 
 def evaluate_context(context: EvaluationContext) -> Object:
@@ -46,7 +68,7 @@ async def evaluate(
         if var_name in context.buildins:
             return context.buildins[var_name]
         if var_name not in assignments:
-            raise EvaluationError(f"No variable named '{var_name}'")
+            raise EvaluationError(context, expr, f"Name '{var_name}' is not defined")
         return await evaluate(assignments[var_name], assignments, locals, context)
 
     async def evaluate_literal_string(expr: astree.LiteralString) -> Object:
@@ -76,7 +98,7 @@ async def evaluate(
         evaluated_target = await evaluate(expr.target, assignments, locals, context)
         attr_name = expr.name.name
         if not evaluated_target.has_attr(attr_name):
-            raise EvaluationError(f"No attribute named '{attr_name}'")
+            raise EvaluationError(context, expr, f"No attribute named '{attr_name}'")
         return await evaluated_target.get_attr(attr_name)
 
     async def evaluate_call(expr: astree.Call) -> Object:
@@ -89,19 +111,23 @@ async def evaluate(
             for kw, arg in expr.key_args.items()
         }
 
-        if isinstance(evaluated_target, Function):
-            return await evaluate_function_call(
-                evaluated_target, evaluated_args, evaluated_kwargs
-            )
-        else:
-            raise EvaluationError("Target is not a callable")
+        if not isinstance(evaluated_target, Function):
+            raise EvaluationError(context, expr, "Target is not a callable")
 
-    async def evaluate_function_call(
-        target: Function,
-        args: list[Object],
-        kwargs: dict[str, Object],
-    ) -> Object:
-        return await target.call(context, args, kwargs)
+        try:
+            return await evaluated_target.call(
+                context, evaluated_args, evaluated_kwargs
+            )
+        except FunctionCallError as e:
+            raise FunctionEvaluationError(context, expr, str(e)) from None
+
+        except Exception as e:
+            raise FunctionEvaluationError(
+                context,
+                expr,
+                "Internal error: " + str(traceback.format_exc()),
+
+            ) from None
 
     if isinstance(expr, astree.Variable):
         return await evaluate_variable(expr)

@@ -25,11 +25,16 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file", default="build.txt", type=Path)
+    # parser.add_argument("command")
+    # parser.add_argument("target", nargs="?")
 
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(help='subcommand help')
 
-    do_parser = subparsers.add_parser("do")
-    do_parser.add_argument("target", nargs="?", type=str)
+    parser_a = subparsers.add_parser('a', help='a help')
+    parser_a.add_argument('bar', type=int, help='bar help')
+
+    parser_b = subparsers.add_parser('b', help='b help')
+    parser_b.add_argument('foo', type=int, help='foo help')
 
     async def main():
         args = parser.parse_args()
@@ -108,7 +113,6 @@ def main():
 
         result = evaluate_context(evaluation_context)
 
-        # exit(1)
         if not args.target:
             print("No target specified, available targets:")
             for target in result.attrs():

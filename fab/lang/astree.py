@@ -1,16 +1,50 @@
 import abc
-from math import exp
 from typing import override
 
 
+class SourcePosition:
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
+
+    def __init__(
+        self, start_line: int, start_column: int, end_line: int = 0, end_column: int = 0
+    ) -> None:
+        self.start_line = start_line
+        self.start_column = start_column
+        self.end_line = end_line
+        self.end_column = end_column
+
+    @override
+    def __eq__(self, other: object, /) -> bool:
+        if not isinstance(other, SourcePosition):
+            return False
+        return (
+            self.start_line == other.start_line
+            and self.start_column == other.start_column
+            and self.end_line == other.end_line
+            and self.end_column == other.end_column
+        )
+
+    def __str__(self):
+        return (
+            f"{self.start_line}:{self.start_column}-{self.end_line}:{self.end_column}"
+        )
+
+
 class AstNode(abc.ABC):
-    pass
+    source_position: SourcePosition
+
+    def __init__(self, source_position: SourcePosition) -> None:
+        self.source_position = source_position
 
 
 class Name(AstNode):
     name: str
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, source_position: SourcePosition, name: str) -> None:
+        super().__init__(source_position)
         self.name = name
 
     @override
@@ -29,7 +63,8 @@ class Expression(AstNode, abc.ABC):
 class LiteralString(Expression):
     value: str
 
-    def __init__(self, value: str) -> None:
+    def __init__(self, source_position: SourcePosition, value: str) -> None:
+        super().__init__(source_position)
         self.value = value
 
     @override
@@ -44,10 +79,12 @@ class Call(Expression):
 
     def __init__(
         self,
+        source_position: SourcePosition,
         target: Expression,
         pos_args: list[Expression],
         key_args: dict[Name, Expression],
     ) -> None:
+        super().__init__(source_position)
         self.target = target
         self.pos_args = pos_args
         self.key_args = key_args
@@ -62,7 +99,8 @@ class Call(Expression):
 class Variable(Expression):
     name: Name
 
-    def __init__(self, name: Name) -> None:
+    def __init__(self, source_position: SourcePosition, name: Name) -> None:
+        super().__init__(source_position)
         self.name = name
 
     @override
@@ -73,7 +111,10 @@ class Variable(Expression):
 class List(Expression):
     items: list[Expression]
 
-    def __init__(self, items: list[Expression]) -> None:
+    def __init__(
+        self, source_position: SourcePosition, items: list[Expression]
+    ) -> None:
+        super().__init__(source_position)
         self.items = items
 
     @override
@@ -86,7 +127,14 @@ class ListComprehension(Expression):
     target: Name
     iterable: Expression
 
-    def __init__(self, expression: Expression, target: Name, iterable: Expression):
+    def __init__(
+        self,
+        source_position: SourcePosition,
+        expression: Expression,
+        target: Name,
+        iterable: Expression,
+    ):
+        super().__init__(source_position)
         self.expression = expression
         self.target = target
         self.iterable = iterable
@@ -100,7 +148,10 @@ class AttributeRef(Expression):
     target: Expression
     name: Name
 
-    def __init__(self, target: Expression, name: Name) -> None:
+    def __init__(
+        self, source_position: SourcePosition, target: Expression, name: Name
+    ) -> None:
+        super().__init__(source_position)
         self.target = target
         self.name = name
 

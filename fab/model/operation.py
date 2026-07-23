@@ -3,14 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-
-class GlobalState(ABC):
-    @abstractmethod
-    def __init__(self, context: OperationContext) -> None:
-        pass
-
-    def done(self):
-        pass
+from fab.model.oci import OciContainer
 
 
 class OperationContext(ABC):
@@ -18,7 +11,14 @@ class OperationContext(ABC):
     def get_sandbox(self) -> Path: ...
 
     @abstractmethod
-    def get_oci_container(self, spec): ...
+    async def get_oci_container(
+        self,
+        image: str,
+        working_dir: str | None = None,
+        cmd: list[str] | None = None,
+        user: str | None = None,
+        host_mountpoint: Path | None = None,
+    ) -> OciContainer: ...
 
     @abstractmethod
     def report_progress(self): ...
@@ -36,8 +36,16 @@ class OperationContext(ABC):
     def get_param(self, key: str) -> Any: ...
 
     @abstractmethod
-    def get_global_state[T: GlobalState](self, state_class: type[T]) -> T: ...
+    def get_global_state[T](self, state_class: type[T]) -> T: ...
+
+    @abstractmethod
+    def cleanup(self): ...
 
 
 class Operation(ABC):
+    @abstractmethod
     async def execute(self, context: OperationContext) -> Any: ...
+
+
+class OperationError(RuntimeError):
+    pass

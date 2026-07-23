@@ -1,5 +1,7 @@
 from typing import override
 from pathlib import Path
+
+from .cache_logger import CacheLogger
 from ..model import Cache
 
 from ..util.string_slices import string_slices
@@ -12,7 +14,14 @@ class DiskCacheError(RuntimeError):
     pass
 
 
-class DiskCache(Cache):
+class DiskCache(CacheLogger):
+    def __init__(self, root: Path) -> None:
+        root.mkdir(parents=True, exist_ok=True)
+        actual_cache = ActualDiskCache(root)
+        super().__init__(root / "cache_hits.log", actual_cache)
+
+
+class ActualDiskCache(Cache):
     def __init__(self, root: Path) -> None:
 
         self.__ops = root / "v1/ops"

@@ -9,7 +9,7 @@ import aiohttp.web
 import pytest
 
 from ..caching import DiskCache
-from ..model import GlobalState, OperationContext
+from ..model import OperationContext
 from .http_get import HttpGet
 
 
@@ -47,8 +47,12 @@ class DummyOperationContext(OperationContext):
         raise NotImplementedError
 
     @override
-    def get_global_state[T: GlobalState](self, state_class: type[T]) -> T:
+    def get_global_state[T](self, state_class: type[T]) -> T:
         raise NotImplementedError
+
+    @override
+    def cleanup(self):
+        pass
 
 
 class FileServer:
