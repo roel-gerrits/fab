@@ -52,6 +52,12 @@ class OciClient(abc.ABC):
     ) -> OciContainer | None: ...
 
     @abc.abstractmethod
+    async def list_containers(
+        self,
+        label: tuple[str, str],
+    ) -> list[OciContainer]: ...
+
+    @abc.abstractmethod
     async def pull_image(self, image: str) -> AsyncIterator[PullEvent]: ...
 
 
@@ -64,6 +70,9 @@ class OciContainer(abc.ABC):
 
     @abc.abstractmethod
     async def kill(self): ...
+
+    @abc.abstractmethod
+    async def remove(self): ...
 
     @abc.abstractmethod
     async def exec(

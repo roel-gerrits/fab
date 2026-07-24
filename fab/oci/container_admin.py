@@ -2,6 +2,8 @@ from hashlib import sha256
 
 from ..model.oci import ImageNotFoundError, OciClient, OciContainer
 
+CONTAINER_LABEL = "fab-build-container"
+
 
 class ContainerAdmin:
     def __init__(self, client: OciClient):
@@ -33,7 +35,9 @@ class ContainerAdmin:
 
         try:
             container = await self.__client.create_container(
-                image, cmd, working_dir, user, bind_mounts, name=container_name
+                image, cmd, working_dir, user, bind_mounts,
+                labels=[(CONTAINER_LABEL, "")],
+                name=container_name,
             )
         except ImageNotFoundError:
             async for pull_event in self.__client.pull_image(image):
@@ -41,10 +45,19 @@ class ContainerAdmin:
                 pass
 
             container = await self.__client.create_container(
-                image, cmd, working_dir, user, bind_mounts, name=container_name
+                image, cmd, working_dir, user, bind_mounts,
+                labels=[(CONTAINER_LABEL, "")],
+                name=container_name,
             )
 
         await container.start()
 
         self.__container_store[key] = container
         return container
+
+    async def clean_containers(self) -> int:
+        containers = await self.__client.list_containers(label=(CONTAINER_LABEL, ""))
+        for container in containers:
+            await container.kill()
+            await container.remove()
+        return len(containers)

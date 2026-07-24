@@ -2,7 +2,7 @@
 
 Usage:
     fab [options] (do|run|ls|tree) <target> [--file FILE] [--no-cache] [--no-remote-cache]
-    fab [options] stop-containers
+    fab [options] clean-containers
     fab [options] clean-cache
     fab [options] cache-info
     fab --version
@@ -178,6 +178,7 @@ async def cli():
         try:
             eval_result = evaluate_context(evaluation_context)
             result = await eval_result.get_attr(target)
+            print(f"Cache stats: {cache.hits} hits, {cache.misses} misses")
         except EvaluationError as e:
             print(format_evaluation_error(e))
             return None
@@ -199,15 +200,19 @@ async def cli():
 
         subprocess.run(result.path)
 
-    if args["do"]:
+    async def clean_containers():
+        count = await container_admin.clean_containers()
+        print(f"Removed {count} container(s).")
+
+    if args["clean-containers"]:
+        await clean_containers()
+    elif args["do"]:
         await do()
     elif args["run"]:
         await run()
-
     else:
         print(args)
 
-    print(f"Cache stats: {cache.hits} hits, {cache.misses} misses")
 
     await podman_client.aclose()
 

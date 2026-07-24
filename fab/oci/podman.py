@@ -160,6 +160,11 @@ class PodmanContainer(OciContainer):
         async with self._session.post(url) as resp:
             await _raise_for_status(resp)
 
+    async def remove(self) -> None:
+        url = f"http://localhost/{_API_VERSION}/containers/{self._id}"
+        async with self._session.delete(url) as resp:
+            await _raise_for_status(resp)
+
     # ------------------------------------------------------------------
     # Exec
     # ------------------------------------------------------------------
@@ -334,6 +339,22 @@ class PodmanClient(OciClient):
 
         container_id = containers[0]["Id"]
         return PodmanContainer(self._session, container_id)
+
+    async def list_containers(
+        self,
+        label: tuple[str, str],
+    ) -> list[OciContainer]:
+        """Return all containers matching the given label filter."""
+        key, value = label
+        filters = {"label": [f"{key}={value}"]}
+        url = f"http://localhost/{_API_VERSION}/containers/json"
+        params = {"filters": json.dumps(filters), "all": "true"}
+
+        async with self._session.get(url, params=params) as resp:
+            await _raise_for_status(resp)
+            containers = await resp.json()
+
+        return [PodmanContainer(self._session, c["Id"]) for c in containers]
 
     async def pull_image(self, image: str) -> AsyncIterator[PullEvent]:
         """Pull an image from a registry, yielding progress events."""
