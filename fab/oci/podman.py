@@ -62,7 +62,7 @@ async def _raise_for_status(resp: aiohttp.ClientResponse) -> None:
     if resp.status < 400:
         return
     body = await resp.json()
-    raise OciError(body.get("cause"))
+    raise OciError(f"{body.get('cause')}: {body.get('message')}")
 
 
 # ---------------------------------------------------------------------------
@@ -330,7 +330,9 @@ class PodmanClient(OciClient):
             filters["name"] = [name]
         url = f"http://localhost/{_API_VERSION}/containers/json"
 
-        async with self._session.get(url, params={"filters": json.dumps(filters)}) as resp:
+        async with self._session.get(
+            url, params={"filters": json.dumps(filters)}
+        ) as resp:
             await _raise_for_status(resp)
             containers = await resp.json()
 

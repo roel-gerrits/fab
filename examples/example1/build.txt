@@ -1,6 +1,12 @@
+
+#lolz
+
+
 includes = [
     path("."),
     path("liba"),
+    # filter_dir(path("."), "*.h")
+    # dir(".", filter="*.h")
 ]
 
 sources = [
