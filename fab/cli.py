@@ -11,7 +11,7 @@ Usage:
 Options:
     -h, --help            Show this helpful text.
     -v, --version         Show version.
-    -f FILE, --file FILE  Build file to read. [default: build.txt]
+    -f FILE, --file FILE  Build file to read. [default: build.fab]
     --no-cache            Do not use cache.
     --no-remote-cache     Do not use remote cache.
 

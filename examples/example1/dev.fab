@@ -1,0 +1,6 @@
+
+
+compile_commands = link(gcc_collect_compile_commands(
+	load("build.fab").exe2
+))
+
