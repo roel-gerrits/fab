@@ -2,6 +2,7 @@
 
 Usage:
     fab [options] (do|run|ls|tree) <target> [--file FILE] [--no-cache] [--no-remote-cache]
+    fab [options] list-targets [--file FILE]
     fab [options] clean-containers
     fab [options] clean-cache
     fab [options] cache-info
@@ -200,11 +201,18 @@ async def cli():
 
         subprocess.run(result.path)
 
+    def list_targets():
+        build_object = evaluate_context(evaluation_context)
+        for name in build_object.attrs():
+            print(name)
+
     async def clean_containers():
         count = await container_admin.clean_containers()
         print(f"Removed {count} container(s).")
 
-    if args["clean-containers"]:
+    if args["list-targets"]:
+        list_targets()
+    elif args["clean-containers"]:
         await clean_containers()
     elif args["do"]:
         await do()
@@ -212,7 +220,6 @@ async def cli():
         await run()
     else:
         print(args)
-
 
     await podman_client.aclose()
 
