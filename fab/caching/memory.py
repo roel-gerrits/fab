@@ -9,15 +9,15 @@ class MemoryCache(Cache):
         self.__cached_paths: dict[bytes, Path] = {}
 
     @override
-    def has(self, op_key: bytes) -> bool:
+    async def has(self, op_key: bytes) -> bool:
         return op_key in self.__cached_paths
 
     @override
-    def get_path(self, op_key: bytes) -> Path:
+    async def get_path(self, op_key: bytes) -> Path:
         return self.__cached_paths[op_key]
 
     @override
-    def store_path(self, op_key: bytes, path: Path) -> Path:
+    async def store_path(self, op_key: bytes, path: Path) -> Path:
         self.__cached_paths[op_key] = path
         return path
 

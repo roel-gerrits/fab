@@ -18,16 +18,16 @@ class CacheLogger(Cache):
         self.__logfile.flush()
 
     @override
-    def has(self, op_key: bytes) -> bool:
-        result = self.__base.has(op_key)
+    async def has(self, op_key: bytes) -> bool:
+        result = await self.__base.has(op_key)
         if result:
             self.__log_hit(op_key)
         return result
 
     @override
-    def get_path(self, op_key: bytes) -> Path:
-        return self.__base.get_path(op_key)
+    async def get_path(self, op_key: bytes) -> Path:
+        return await self.__base.get_path(op_key)
 
     @override
-    def store_path(self, op_key: bytes, path: Path) -> Path:
-        return self.__base.store_path(op_key, path)
+    async def store_path(self, op_key: bytes, path: Path) -> Path:
+        return await self.__base.store_path(op_key, path)

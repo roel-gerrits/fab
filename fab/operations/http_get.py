@@ -19,8 +19,8 @@ class HttpGet(Operation):
 
         key = hash_objects(sha256(), self.__url)
 
-        if context.cache_check(key):
-            return context.cache_load_path(key)
+        if await context.cache_check(key):
+            return await context.cache_load_path(key)
 
         sandbox = context.get_sandbox()
         download_result = sandbox / parsed_url.name
@@ -32,6 +32,6 @@ class HttpGet(Operation):
                         f.write(chunk)
                         # print(".", end="", flush=True)
 
-        cached_path = context.cache_store_path(key, download_result)
+        cached_path = await context.cache_store_path(key, download_result)
 
         return cached_path

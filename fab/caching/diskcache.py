@@ -39,12 +39,12 @@ class ActualDiskCache(Cache):
         return self.__blobs / key_parts[0] / key_parts[1] / blob_key.hex()
 
     @override
-    def has(self, op_key: bytes) -> bool:
+    async def has(self, op_key: bytes) -> bool:
         op_path = self.__get_op_path(op_key)
         return op_path.exists()
 
     @override
-    def get_path(self, op_key: bytes) -> Path:
+    async def get_path(self, op_key: bytes) -> Path:
         op_path = self.__get_op_path(op_key)
         if not op_path.is_dir():
             raise DiskCacheError(f"{op_path} does not exist")
@@ -58,7 +58,7 @@ class ActualDiskCache(Cache):
         return blob_path
 
     @override
-    def store_path(self, op_key: bytes, path: Path) -> Path:
+    async def store_path(self, op_key: bytes, path: Path) -> Path:
         if not path.exists():
             raise DiskCacheError(f"Cannot store non-existent path {path} in cache")
 

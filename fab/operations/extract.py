@@ -17,8 +17,8 @@ class Extract(Operation):
     async def execute(self, context: OperationContext) -> Any:
         key = hash_objects(blake3(), "Extract", self.__archive)
 
-        if context.cache_check(key):
-            return context.cache_load_path(key)
+        if await context.cache_check(key):
+            return await context.cache_load_path(key)
 
         sandbox = context.get_sandbox()
         extract_dir = sandbox / self.__archive.name
@@ -26,6 +26,6 @@ class Extract(Operation):
 
         shutil.unpack_archive(self.__archive, extract_dir)
 
-        cached_path = context.cache_store_path(key, extract_dir)
+        cached_path = await context.cache_store_path(key, extract_dir)
 
         return cached_path

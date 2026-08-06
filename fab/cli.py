@@ -84,16 +84,16 @@ class MainOperationContextFactory(OperationContextFactory):
                 raise NotImplementedError()
 
             @override
-            def cache_check(self, key: bytes) -> bool:
-                return this._cache.has(key)
+            async def cache_check(self, key: bytes) -> bool:
+                return await this._cache.has(key)
 
             @override
-            def cache_load_path(self, key: bytes) -> Path:
-                return this._cache.get_path(key)
+            async def cache_load_path(self, key: bytes) -> Path:
+                return await this._cache.get_path(key)
 
             @override
-            def cache_store_path(self, key: bytes, path: Path) -> Path:
-                return this._cache.store_path(key, path)
+            async def cache_store_path(self, key: bytes, path: Path) -> Path:
+                return await this._cache.store_path(key, path)
 
             @override
             def get_param(self, key: str) -> Any:

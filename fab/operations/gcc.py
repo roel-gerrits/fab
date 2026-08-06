@@ -63,8 +63,8 @@ class GccCompile(Operation):
         )
 
         key = hash_objects(blake3(), "g++_compile", self.__source, self.__includes)
-        if context.cache_check(key):
-            return context.cache_load_path(key)
+        if await context.cache_check(key):
+            return await context.cache_load_path(key)
 
         sandbox = context.get_sandbox()
         source_link = sandbox / self.__source.name
@@ -88,7 +88,7 @@ class GccCompile(Operation):
         if returncode != 0:
             exit(1)
 
-        cached_path = context.cache_store_path(key, sandbox / outputname)
+        cached_path = await context.cache_store_path(key, sandbox / outputname)
 
         return cached_path
 
@@ -101,8 +101,8 @@ class GccLink(Operation):
     @override
     async def execute(self, context: OperationContext) -> Any:
         key = hash_objects(blake3(), "g++_link", self.__outputname, self.__objects)
-        if context.cache_check(key):
-            return context.cache_load_path(key)
+        if await context.cache_check(key):
+            return await context.cache_load_path(key)
 
         sandbox = context.get_sandbox()
 
@@ -120,7 +120,7 @@ class GccLink(Operation):
         if returncode != 0:
             exit(1)
 
-        cached_path = context.cache_store_path(key, sandbox / self.__outputname)
+        cached_path = await context.cache_store_path(key, sandbox / self.__outputname)
         return cached_path
 
 

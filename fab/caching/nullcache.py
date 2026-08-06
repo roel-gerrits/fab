@@ -4,13 +4,13 @@ from ..model import Cache
 
 class NullCache(Cache):
     @override
-    def has(self, op_key: bytes) -> bool:
+    async def has(self, op_key: bytes) -> bool:
         return False
 
     @override
-    def get_path(self, op_key: bytes) -> Path:
+    async def get_path(self, op_key: bytes) -> Path:
         raise KeyError()
 
     @override
-    def store_path(self, op_key: bytes, path: Path) -> Path:
+    async def store_path(self, op_key: bytes, path: Path) -> Path:
         raise NotImplementedError()

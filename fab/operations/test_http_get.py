@@ -31,16 +31,16 @@ class DummyOperationContext(OperationContext):
         pass
 
     @override
-    def cache_check(self, key: bytes) -> bool:
-        return self.__cache.has(key)
+    async def cache_check(self, key: bytes) -> bool:
+        return await self.__cache.has(key)
 
     @override
-    def cache_load_path(self, key: bytes) -> Path:
-        return self.__cache.get_path(key)
+    async def cache_load_path(self, key: bytes) -> Path:
+        return await self.__cache.get_path(key)
 
     @override
-    def cache_store_path(self, key: bytes, path: Path) -> Path:
-        return self.__cache.store_path(key, path)
+    async def cache_store_path(self, key: bytes, path: Path) -> Path:
+        return await self.__cache.store_path(key, path)
 
     @override
     def get_param(self, key: str) -> Any:

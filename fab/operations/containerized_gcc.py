@@ -166,8 +166,8 @@ class GccCompile(Operation):
             [str(p) for p in self.__includes],
         )
 
-        if deps_cached := context.cache_check(deps_key):
-            deps_file = context.cache_load_path(deps_key)
+        if deps_cached := await context.cache_check(deps_key):
+            deps_file = await context.cache_load_path(deps_key)
             dep_paths = _parse_deps_file(deps_file)
 
             key = hash_objects(
@@ -179,8 +179,8 @@ class GccCompile(Operation):
                 [sandbox.translate_sandbox_to_host(p) for p in dep_paths],
             )
 
-            if context.cache_check(key):
-                return context.cache_load_path(key)
+            if await context.cache_check(key):
+                return await context.cache_load_path(key)
 
         cmd = flatten(
             [
@@ -200,7 +200,7 @@ class GccCompile(Operation):
 
         if not deps_cached:
             deps_file = sandbox.extract("deps.d")
-            deps_file = context.cache_store_path(deps_key, deps_file)
+            deps_file = await context.cache_store_path(deps_key, deps_file)
 
         outfile = sandbox.extract(outputname)
 
@@ -213,7 +213,7 @@ class GccCompile(Operation):
             [sandbox.translate_sandbox_to_host(p) for p in _parse_deps_file(deps_file)],
         )
 
-        return context.cache_store_path(key, outfile)
+        return await context.cache_store_path(key, outfile)
 
 
 class GccLink(Operation):
@@ -240,8 +240,8 @@ class GccLink(Operation):
             self.__objects,
         )
 
-        if context.cache_check(key):
-            return context.cache_load_path(key)
+        if await context.cache_check(key):
+            return await context.cache_load_path(key)
 
         gcc_bin = f"{self.__target_triplet}-g++" if self.__target_triplet else "g++"
         sandbox = ContainerizedSandbox(context, self.__oci_image)
@@ -255,4 +255,4 @@ class GccLink(Operation):
 
         result = sandbox.extract(self.__outputname)
 
-        return context.cache_store_path(key, result)
+        return await context.cache_store_path(key, result)
