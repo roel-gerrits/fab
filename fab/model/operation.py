@@ -48,4 +48,10 @@ class Operation(ABC):
 
 
 class OperationError(RuntimeError):
-    pass
+    error_line: str
+    error_msg: str
+
+    def __init__(self, error_line: str, error_msg: str) -> None:
+        self.error_line = error_line
+        self.error_msg = error_msg
+        super().__init__(error_line)

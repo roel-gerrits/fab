@@ -2,6 +2,8 @@ from .cache import Cache
 from .operation import Operation, OperationContext, OperationError
 from .executor import OperationExecutor
 from .oci import OciContainer, OciClient, OciProcess
+from .outputchunks import StreamType, OutputChunk
+from .errors import CommandFailedError, Error
 
 __all__ = [
     "Cache",
@@ -12,4 +14,8 @@ __all__ = [
     "OciContainer",
     "OciClient",
     "OciProcess",
+    "StreamType",
+    "OutputChunk",
+    "Error",
+    "CommandFailedError",
 ]

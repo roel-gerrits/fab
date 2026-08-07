@@ -34,7 +34,14 @@ from .caching import DiskCache, CacheHitCounter
 from .executors.simple_executor import SimpleOperationExecutor
 from .lang.evaluation_context import DefaultEvaluationContext
 from .lang.evaluator import EvaluationError, evaluate_context
-from .model import Cache, OperationContext, OciContainer, OperationError
+from .model import (
+    Cache,
+    CommandFailedError,
+    OperationContext,
+    OciContainer,
+    OperationError,
+    StreamType,
+)
 from .model.executor import OperationContextFactory
 
 
@@ -128,7 +135,7 @@ def format_evaluation_error(error: EvaluationError) -> str:
     source_position = error.expr.source_position
     source_line = source_file.read_text().splitlines()[source_position.start_line - 1]
 
-    output = []
+    output: list[str] = []
     output.append(f'File "{source_file}", line {source_position.start_line}:\n')
     output.append("  ")
     output.append(source_line)
@@ -137,7 +144,16 @@ def format_evaluation_error(error: EvaluationError) -> str:
     output.append(" " * (source_position.start_column - 1))
     output.append("^" * (source_position.end_column - source_position.start_column))
     output.append("\n")
-    output.append(error.msg)
+
+    if isinstance(error.cause, CommandFailedError):
+        output.append(f"Command failed, exitcode={error.cause.exitcode}\n")
+        output.append("  ")
+        output.append(" ".join(error.cause.cmd))
+        output.append("\n")
+        output.append("\n")
+
+        for chunk in error.cause.output:
+            output.append(chunk.chunk.decode())
 
     return "".join(output)
 
@@ -183,10 +199,6 @@ async def cli():
         except EvaluationError as e:
             print(format_evaluation_error(e))
             return None
-        except OperationError as e:
-            print(e)
-            # return None
-            raise e
         return result
 
     async def do():

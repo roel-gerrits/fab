@@ -25,6 +25,8 @@ from typing import Any, override
 
 import aiohttp
 
+from fab.model import OutputChunk
+
 from ..model.oci import (
     ImageNotFoundError,
     OciClient,
@@ -34,8 +36,8 @@ from ..model.oci import (
     ProgressDetail,
     PullError,
     PullEvent,
-    StreamType,
 )
+from ..model import StreamType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -72,7 +74,7 @@ async def _raise_for_status(resp: aiohttp.ClientResponse) -> None:
 
 async def _demux_stream(
     resp: aiohttp.ClientResponse,
-) -> AsyncIterator[tuple[StreamType, bytes]]:
+) -> AsyncIterator[OutputChunk]:
     """Yield (StreamType, bytes) chunks from a Docker-multiplexed stream.
 
     Frame format:
@@ -98,7 +100,7 @@ async def _demux_stream(
             buf = buf[HEADER + payload_len :]
             stype = _TYPE_MAP.get(stream_type_byte, StreamType.STDOUT)
             if payload:
-                yield stype, payload
+                yield OutputChunk(stype, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +177,7 @@ class PodmanContainer(OciContainer):
         working_dir: str,
         user: str | None = None,
         env: dict[str, str] | None = None,
-    ) -> tuple[OciProcess, AsyncIterator[tuple[StreamType, bytes]]]:
+    ) -> tuple[OciProcess, AsyncIterator[OutputChunk]]:
         """Create and start an exec instance; return (process, output_stream)."""
 
         # Step 1: create the exec instance

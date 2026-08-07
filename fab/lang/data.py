@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import Any, override
 
-from ..model import Operation
+from ..model import Operation, Error
 
 
 class Object(ABC):
@@ -81,7 +81,7 @@ class EvaluationContext(ABC):
     def buildins(self) -> Mapping[str, Object]: ...
 
 
-class FunctionCallError(RuntimeError):
+class FunctionCallError(Error):
     pass
 
 

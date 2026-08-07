@@ -1,27 +1,14 @@
-from collections.abc import Iterable, Iterator, Sequence
-from multiprocessing import process
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import override
 
 from blake3 import blake3
 
-from fab.model.oci import StreamType
-from .gcc import CompileCommandsCollector, CompileObject
-from ..util.hash_objects import hash_objects
-from ..model import Operation, OperationContext, OperationError
 
-
+from ..model import Operation, OperationContext, CommandFailedError
 from ..util.flatten_list import flatten
-
-
-class CommandFailedError(OperationError):
-    stderr: str
-    exitcode: int
-
-    def __init__(self, exitcode: int, stderr: str):
-        self.exitcode = exitcode
-        self.stderr = stderr
-        super().__init__(self, f"Command failed with code {exitcode}")
+from ..util.hash_objects import hash_objects
+from .gcc import CompileCommandsCollector, CompileObject
 
 
 class ContainerizedSandbox:
@@ -44,7 +31,6 @@ class ContainerizedSandbox:
         return Path("/") / sandbox_path.absolute().relative_to(self.__host_mountpoint)
 
     async def execute(self, cmd: list[str]):
-        print(cmd)
         container = await self.__context.get_oci_container(
             image=self.__image,
             user="root",
@@ -55,29 +41,11 @@ class ContainerizedSandbox:
         )
 
     async def execute_and_check(self, cmd: list[str]):
-        process, output = await self.execute(cmd)
-        async for chunk in output:
-            print(chunk, end=None, flush=True)
+        process, output_stream = await self.execute(cmd)
+        output = [chunk async for chunk in output_stream]
         exit_code = await process.wait()
         if exit_code != 0:
-            raise OperationError("Operation exited with non-zero code")
-
-    async def execute_and_get_stdout(self, cmd: list[str]) -> str:
-        process, output = await self.execute(cmd)
-        stdout = b""
-        stderr = b""
-        async for streamtype, chunk in output:
-            if streamtype == StreamType.STDOUT:
-                stdout += chunk
-            elif streamtype == StreamType.STDERR:
-                stderr += chunk
-
-        exit_code = await process.wait()
-        if exit_code != 0:
-            print(stderr)
-            raise CommandFailedError(exit_code, stderr.decode())
-
-        return stdout.decode()
+            raise CommandFailedError(cmd, exit_code, output)
 
     def extract(self, path: Path | str) -> Path:
         return self.__sandbox / Path(path)

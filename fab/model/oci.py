@@ -2,7 +2,7 @@ from __future__ import annotations
 import abc
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
-import enum
+from .outputchunks import OutputChunk
 
 
 class OciError(RuntimeError):
@@ -81,12 +81,7 @@ class OciContainer(abc.ABC):
         working_dir: str,
         user: str | None = None,
         env: dict[str, str] | None = None,
-    ) -> tuple[OciProcess, AsyncIterator[tuple[StreamType, bytes]]]: ...
-
-
-class StreamType(enum.Enum):
-    STDOUT = enum.auto()
-    STDERR = enum.auto()
+    ) -> tuple[OciProcess, AsyncIterator[OutputChunk]]: ...
 
 
 class OciProcess(abc.ABC):

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import override
 
 from fab.lang.util import DictObject
+from ..model import OperationError
 
 from ..operations.gcc import GccCompile, GccLink, GccCollectCompileCommands
 from ..operations.containerized_gcc import (
@@ -11,7 +12,15 @@ from ..operations.containerized_gcc import (
 )
 
 from ..operations import Extract, HttpArchive, HttpGet
-from .data import EvaluationContext, Function, List, Object, PathObj, String, FunctionCallError
+from .data import (
+    EvaluationContext,
+    Function,
+    List,
+    Object,
+    PathObj,
+    String,
+    FunctionCallError,
+)
 from .evaluator import evaluate_context
 
 
@@ -154,7 +163,9 @@ class ContainerizedGcc(Function):
         assert isinstance(args[0], String)
 
         container_image = args[0].value
-        target_triplet = kwargs.get("target_triplet").value if "target_triplet" in kwargs else None
+        target_triplet = (
+            kwargs.get("target_triplet").value if "target_triplet" in kwargs else None
+        )
 
         class CompileFunc(Function):
             @override
@@ -189,7 +200,10 @@ class ContainerizedGcc(Function):
                 op = ContainerizedGccLink(
                     container_image, target_triplet, outputname, objects
                 )
-                result = await context.execute_operation(op)
+                try:
+                    result = await context.execute_operation(op)
+                except OperationError as e:
+                    raise FunctionCallError(e.error_line, e.error_msg)
                 return PathObj(result)
 
         return DictObject(
