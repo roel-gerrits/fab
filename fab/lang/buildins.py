@@ -180,7 +180,10 @@ class ContainerizedGcc(Function):
                 source = args[0].path
                 includes = [p.path for p in kwargs["includes"].items]
                 op = ContainerizedGccCompile(
-                    container_image, target_triplet, source, includes
+                    container_image,
+                    target_triplet,
+                    source,
+                    includes,
                 )
                 result = await context.execute_operation(op)
                 return PathObj(result)
@@ -197,8 +200,16 @@ class ContainerizedGcc(Function):
                 assert isinstance(args[1], List)
                 outputname = args[0].value
                 objects = [p.path for p in args[1].items]
+                options = []
+                if "options" in kwargs:
+                    assert isinstance(kwargs["options"], List)
+                    options = [item.value for item in kwargs["options"].items]
                 op = ContainerizedGccLink(
-                    container_image, target_triplet, outputname, objects
+                    container_image,
+                    target_triplet,
+                    outputname,
+                    objects,
+                    options=options,
                 )
                 try:
                     result = await context.execute_operation(op)

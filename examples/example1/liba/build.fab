@@ -1,0 +1,10 @@
+
+toolchain = load("../tools.fab").toolchain
+
+sources = [path("liba.cpp")]
+includes = [path(".")]
+liba = toolchain.link(
+    "liba", 
+    [toolchain.compile(src, includes=includes) for src in sources],
+    options=["-shared"],
+    )

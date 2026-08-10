@@ -134,7 +134,9 @@ class GccCompile(Operation):
             [str(p) for p in self.__includes],
         )
 
-        if deps_cached := await context.cache_check(deps_key):
+        deps_cached = await context.cache_check(deps_key)
+
+        if deps_cached:
             deps_file = await context.cache_load_path(deps_key)
             dep_paths = _parse_deps_file(deps_file)
 
@@ -191,11 +193,13 @@ class GccLink(Operation):
         target_triplet: str | None,
         outputname: str,
         objects: Sequence[Path],
+        options: Sequence[str] = (),
     ) -> None:
         self.__oci_image = oci_image
         self.__target_triplet = target_triplet
         self.__outputname = outputname
         self.__objects = objects
+        self.__options = options
 
     @override
     async def execute(self, context: OperationContext) -> Path:
@@ -206,6 +210,7 @@ class GccLink(Operation):
             self.__target_triplet,
             self.__outputname,
             self.__objects,
+            self.__options,
         )
 
         if await context.cache_check(key):
@@ -217,7 +222,15 @@ class GccLink(Operation):
             sandbox.translate_host_to_sandbox(object) for object in self.__objects
         ]
 
-        cmd = flatten([gcc_bin, "-o", self.__outputname, [str(obj) for obj in objects]])
+        cmd = flatten(
+            [
+                gcc_bin,
+                "-o",
+                self.__outputname,
+                [str(obj) for obj in objects],
+                list(self.__options),
+            ]
+        )
 
         await sandbox.execute_and_check(cmd)
 
