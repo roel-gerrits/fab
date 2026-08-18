@@ -125,6 +125,8 @@ class GccCompile(Operation):
             )
         )
 
+        # First see if we can find the dependencies of this file. If this file has 
+        # been compiled before its deps are stored under the following key.
         deps_key = hash_objects(
             blake3(),
             type(self).__qualname__,
@@ -137,6 +139,11 @@ class GccCompile(Operation):
         deps_cached = await context.cache_check(deps_key)
 
         if deps_cached:
+            # Deps file is found. Next step is to see if we can reuse the previous build 
+            # result, ea: none of the dependencies have changed.
+            # We do that by calculating the key for this source file combined with 
+            # all the dependencies.
+
             deps_file = await context.cache_load_path(deps_key)
             dep_paths = _parse_deps_file(deps_file)
 
@@ -150,8 +157,13 @@ class GccCompile(Operation):
             )
 
             if await context.cache_check(key):
+                # Dependencies have not changed! Lets load the build result from cache 
+                # and return
                 return await context.cache_load_path(key)
 
+            # Too bad, dependencies have changed
+
+        # No cahce hit, lets compile the file
         cmd = flatten(
             [
                 gcc_bin,
@@ -165,10 +177,11 @@ class GccCompile(Operation):
                 str(source),
             ]
         )
-
+        print(f">> compile {source}")
         await sandbox.execute_and_check(cmd)
 
         if not deps_cached:
+            # No depsfile was cached yet, do it now
             deps_file = sandbox.extract("deps.d")
             deps_file = await context.cache_store_path(deps_key, deps_file)
 
@@ -232,6 +245,7 @@ class GccLink(Operation):
             ]
         )
 
+        print(f">> link {self.__outputname}")
         await sandbox.execute_and_check(cmd)
 
         result = sandbox.extract(self.__outputname)

@@ -5,7 +5,8 @@ from collections.abc import Iterable
 def chunkify_path(base_path: Path) -> Iterable[bytes]:
 
     if not base_path.exists():
-        raise RuntimeError(f"Path does not exist: {base_path}")
+        yield b"DELETED"
+        return
 
     def visit_entry(path: Path) -> Iterable[bytes]:
         subpath = path.relative_to(base_path.parent)
