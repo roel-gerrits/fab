@@ -1,5 +1,12 @@
 
-toolchain = containerized_gcc(
+toolchain_amd64 = containerized_gcc(
     "mcr.microsoft.com/devcontainers/cpp",
-    # target_triplet="aarch64-rpi3-linux-gnu",
 )
+
+toolchain_rpi = containerized_gcc(
+    "ghcr.io/tttapa/docker-arm-cross-toolchain:aarch64-rpi3-linux-gnu-1.2.1",
+    target_triplet="aarch64-rpi3-linux-gnu",
+)
+
+toolchain = toolchain_amd64
+# toolchain = toolchain_rpi
