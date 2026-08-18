@@ -154,6 +154,8 @@ def format_evaluation_error(error: EvaluationError) -> str:
 
         for chunk in error.cause.output:
             output.append(chunk.chunk.decode())
+    else:
+        output.append(str(error))
 
     return "".join(output)
 
@@ -199,6 +201,10 @@ async def cli():
         except EvaluationError as e:
             print(format_evaluation_error(e))
             return None
+        except KeyError as e:
+            print(f"No target named {target}")
+            return None
+
         return result
 
     async def do():
@@ -207,9 +213,11 @@ async def cli():
 
     async def run():
         result = await evaluate_target()
+        if not result:
+            return 
         if not isinstance(result, PathObj):
             print(f"Target '{target}' does not evaluate to a Path")
-            exit(1)
+            return
 
         subprocess.run(result.path)
 

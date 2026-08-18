@@ -21,7 +21,7 @@ class EvaluationError(RuntimeError):
         self.context = context
         self.expr = expr
         self.cause = cause
-        super().__init__()
+        super().__init__(self.cause)
 
 
 class NameError(Error):
