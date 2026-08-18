@@ -15,17 +15,11 @@ sources = [
     path("liba/liba.cpp"),
 ]
 
-
-# toolchain = containerized_gcc(
-#     "mcr.microsoft.com/devcontainers/cpp",
-#     # target_triplet="aarch64-rpi3-linux-gnu",
-# )
-
-objs2 = [toolchain.compile(src, includes=includes) for src in sources]
-exe2 = toolchain.link("main", objs2)
+objs = [toolchain.compile(src, includes=includes) for src in sources]
+exe = toolchain.link("main", objs)
 
 
-compile_commands = link(gcc_collect_compile_commands(exe2))
+compile_commands = link(gcc_collect_compile_commands(exe))
 
 tool = containerized_tool(
     "image",
