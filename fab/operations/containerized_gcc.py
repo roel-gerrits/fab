@@ -133,7 +133,7 @@ class GccCompile(Operation):
             self.__oci_image,
             self.__target_triplet,
             self.__source,
-            [str(p) for p in self.__includes],
+            [str(p.absolute()) for p in self.__includes],
         )
 
         deps_cached = await context.cache_check(deps_key)
@@ -180,9 +180,9 @@ class GccCompile(Operation):
         print(f">> compile {source}")
         await sandbox.execute_and_check(cmd)
 
+        deps_file = sandbox.extract("deps.d")
         if not deps_cached:
             # No depsfile was cached yet, do it now
-            deps_file = sandbox.extract("deps.d")
             deps_file = await context.cache_store_path(deps_key, deps_file)
 
         outfile = sandbox.extract(outputname)
@@ -195,6 +195,10 @@ class GccCompile(Operation):
             self.__source,
             [sandbox.translate_sandbox_to_host(p) for p in _parse_deps_file(deps_file)],
         )
+
+        if await context.cache_check(key):
+            # Ok, this has actually been build before but propably with different include paths, anyway it hash exactly the same deps so we can just use the cached result.
+            return await context.cache_load_path(key)
 
         return await context.cache_store_path(key, outfile)
 
