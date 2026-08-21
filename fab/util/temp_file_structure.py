@@ -5,9 +5,9 @@ from tempfile import mkdtemp
 
 
 class TempFileStructure:
-    def __init__(self, entries: Sequence[tuple[str, str | None]]) -> None:
+    def __init__(self, entries: Sequence[tuple[str, str | None]] | None = None) -> None:
         self.__root = Path(mkdtemp())
-        for path, content in entries:
+        for path, content in entries or []:
             fullpath = self.__root / path
             # print(fullpath)
             if path.endswith("/"):
