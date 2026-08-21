@@ -14,12 +14,33 @@ class DiskCacheError(RuntimeError):
     pass
 
 
-class DiskCache(CacheLogger):
-    def __init__(self, root: Path) -> None:
-        root.mkdir(parents=True, exist_ok=True)
-        actual_cache = ActualDiskCache(root)
-        super().__init__(root / "cache_hits.log", actual_cache)
+class Log:
+    def __init__(self, path: Path) -> None:
+        self.__path = path
+        self.__path.parent.mkdir(parents=True, exist_ok=True)
+        self.__writer = open(self.__path, "a")
 
+    def __del__(self):
+        self.flush()
+
+    def write(self, timestamp: datetime, key: bytes):
+        time_str = timestamp.isoformat()
+        self.__writer.write(f"{time_str} {key.hex()}\n")
+
+    def flush(self):
+        self.__writer.flush()
+
+    def read_entries(self) -> Generator[tuple[datetime, bytes]]:
+        """Read entries from log, most recent first."""
+
+        self.flush()
+
+        # NOTE: This approach is very inefficient for large files, will need refactoring at some point!
+        for line in reversed(self.__path.read_text().splitlines()):
+            parts = line.split(" ", 1)
+            timestamp = datetime.fromisoformat(parts[0])
+            key = bytes.fromhex(parts[1])
+            yield timestamp, key
 
 class ActualDiskCache(Cache):
     def __init__(self, root: Path) -> None:
