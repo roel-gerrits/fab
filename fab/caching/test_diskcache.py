@@ -54,3 +54,26 @@ async def test_store_again():
         cached_file2 = await cache.store_path(op2_key, file2)
 
         assert path_key(cached_file1) == path_key(cached_file2)
+
+
+def create_file(path: Path, content: str) -> Path:
+    with open(path, "w") as f:
+        f.write(content)
+    return path
+
+
+@pytest.mark.asyncio
+async def test_prune_to_size():
+    with TempFileStructure() as root:
+        cache = DiskCache(root / "cache_dir")
+        op1_key = bytes.fromhex("abcd01")
+        op2_key = bytes.fromhex("abcd02")
+        file1 = await cache.store_path(op1_key, create_file(root / "file1", "aaa"))
+        file2 = await cache.store_path(op2_key, create_file(root / "file2", "bbb"))
+
+        cache.prune_to_size(3)
+
+        assert not await cache.has(op1_key)
+        assert not file1.exists()
+        assert await cache.has(op2_key)
+        assert file2.exists()
