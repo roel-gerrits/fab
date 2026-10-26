@@ -107,6 +107,7 @@ __parser = Lark.open_from_package(
     start="listing",
     parser="lalr",
     propagate_positions=True,
+    # _plugins=lark_rust.plugins
 )
 
 

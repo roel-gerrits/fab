@@ -1,5 +1,7 @@
-from collections.abc import Generator
-from datetime import datetime
+from hashlib import new
+import dataclasses
+from collections.abc import Generator, Iterator
+from datetime import datetime, date
 import os
 from typing import override
 from pathlib import Path
@@ -32,22 +34,52 @@ class Log:
     def flush(self):
         self.__writer.flush()
 
+    # def clear(self):
+    #     self.clear()
+
     def read_entries(self) -> Generator[tuple[datetime, bytes]]:
         """Read entries from log, most recent first."""
 
         self.flush()
 
         # NOTE: This approach is very inefficient for large files, will need refactoring at some point!
-        for line in reversed(self.__path.read_text().splitlines()):
+        yield from reversed(list(self.__read_file()))
+
+    def oldest_entry(self) -> tuple[datetime, bytes] | None:
+        """Return the oldest entry from the log"""
+        try:
+            return next(self.__read_file())
+        except StopIteration:
+            return None
+
+    def newest_entry(self) -> tuple[datetime, bytes] | None:
+        """Return the newest entry from the log"""
+        try:
+            return list(self.__read_file())[-1]
+        except IndexError:
+            return None
+
+    def __read_file(self) -> Iterator[tuple[datetime, bytes]]:
+        for line in self.__path.read_text().splitlines():
             parts = line.split(" ", 1)
             timestamp = datetime.fromisoformat(parts[0])
             key = bytes.fromhex(parts[1])
             yield timestamp, key
 
 
+@dataclasses.dataclass
+class DiskCacheInfo:
+    path: Path
+    n_ops: int
+    n_blobs: int
+    size_blobs: int
+    oldest_op: datetime | None
+    newest_op: datetime | None
+
+
 class DiskCache(Cache):
     def __init__(self, root: Path) -> None:
-
+        self.__root = root
         self.__ops = root / "v1/ops"
         self.__ops.mkdir(parents=True, exist_ok=True)
 
@@ -87,6 +119,36 @@ class DiskCache(Cache):
         """Remove all entries that have not been used after timestamp."""
         pass
         # TODO
+
+    def get_info(self) -> DiskCacheInfo:
+
+        n_ops = 0
+        blob_keys: set[bytes] = set()
+        size_blobs = 0
+
+        for op_path in self.__scan_ops():
+            n_ops += 1
+            object_path = op_path / "object"
+            blob_key = bytes.fromhex(object_path.parent.name)
+
+            if blob_key in blob_keys:
+                continue
+
+            blob_keys.add(blob_key)
+            blob_path = object_path.resolve().parent
+            size_blobs += blob_path.stat().st_size
+
+        oldest_op = self.__log.oldest_entry()
+        newest_op = self.__log.newest_entry()
+
+        return DiskCacheInfo(
+            path=self.__root,
+            n_ops=n_ops,
+            n_blobs=len(blob_keys),
+            size_blobs=size_blobs,
+            oldest_op=oldest_op[0] if oldest_op else None,
+            newest_op=newest_op[0] if newest_op else None,
+        )
 
     def __prune(self, blobs_to_keep: set[bytes]):
 

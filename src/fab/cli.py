@@ -4,8 +4,8 @@ Usage:
     fab [options] (do|run|ls|tree) <target> [--file FILE] [--no-cache] [--no-remote-cache]
     fab [options] list-targets [--file FILE]
     fab [options] clean-containers
-    fab [options] clean-cache
-    fab [options] cache-info
+    fab [options] cache info
+    fab [options] cache prune <size>
     fab --version
 
 Options:
@@ -43,6 +43,7 @@ from .model import (
     StreamType,
 )
 from .model.executor import OperationContextFactory
+from .util.bytesizestr import bytesize2str, str2bytesize
 
 
 class MainOperationContextFactory(OperationContextFactory):
@@ -168,7 +169,8 @@ async def cli():
     # disk_cache = HitCounter(DiskCache(...))
     # remote_cache = HitCounter(RemoteCache(...))
     # combi_cache = ChainedCache(disk_cache, remote_cache)
-    cache = CacheHitCounter(DiskCache(data_home / "cache"))
+    disk_cache = DiskCache(data_home / "cache")
+    cache = CacheHitCounter(disk_cache)
 
     # ui = Tui(disk_cache_counter, remote_cache_counter)
 
@@ -208,13 +210,20 @@ async def cli():
         return result
 
     async def do():
+        await evaluate_target()
+        print("done")
+
+    async def ls():
         result = await evaluate_target()
-        print_result(result)
+        if not isinstance(result, PathObj):
+            print(f"Target '{target}' does not evaluate to a Path")
+            return
+        print(result.path)
 
     async def run():
         result = await evaluate_target()
         if not result:
-            return 
+            return
         if not isinstance(result, PathObj):
             print(f"Target '{target}' does not evaluate to a Path")
             return
@@ -230,14 +239,33 @@ async def cli():
         count = await container_admin.clean_containers()
         print(f"Removed {count} container(s).")
 
+    def cache_info():
+        info = disk_cache.get_info()
+        print(f"root:   {info.path}")
+        print(f"count:  {info.n_ops} ops / {info.n_blobs} blobs")
+        print(f"size:   {bytesize2str(info.size_blobs)}")
+        print(f"oldest: {info.oldest_op or 'n/a'}")
+        print(f"newest: {info.newest_op or 'n/a'}")
+
+    def cache_prune():
+        size = str2bytesize(args["<size>"])
+        print(f"Pruning to {bytesize2str(size)}")
+        disk_cache.prune_to_size(size)
+
     if args["list-targets"]:
         list_targets()
     elif args["clean-containers"]:
         await clean_containers()
     elif args["do"]:
         await do()
+    elif args["ls"]:
+        await ls()
     elif args["run"]:
         await run()
+    elif args["cache"] and args["info"]:
+        cache_info()
+    elif args["cache"] and args["prune"]:
+        cache_prune()
     else:
         print(args)
 

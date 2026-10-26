@@ -1,14 +1,31 @@
 [project]
 name = "fab-build"
-version = "0.0.1"
+version = "0.0.2"
+requires-python = ">=3.12"
 dependencies = [
+    "docopt",
     "blake3",
     "lark",
     "aiohttp",
     "yarl",
     "xdg-base-dirs",
+    "lark-rust>=0.2.1",
 ]
+
+[tool.uv.build-backend]
+module-name = "fab"
 
 
 [project.scripts]
 fab = "fab:cli.main"
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-aiohttp>=1.1.1",
+    "pytest-asyncio>=1.4.0",
+]
