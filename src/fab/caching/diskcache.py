@@ -102,116 +102,6 @@ class DiskCache(Cache):
         self.__log_path = root / "v1/log"
         self.__log = Log(self.__log_path)
 
-    def __get_op_path(self, op_key: bytes) -> Path:
-        key_parts = string_slices(op_key.hex(), 2, 2)
-        return self.__ops / key_parts[0] / key_parts[1] / op_key.hex()
-
-    def __get_blob_path(self, blob_key: bytes) -> Path:
-        key_parts = string_slices(blob_key.hex(), 2, 2)
-        return self.__blobs / key_parts[0] / key_parts[1] / blob_key.hex()
-
-    def prune_to_size(self, size: int):
-
-        kept_ops: dict[bytes, datetime] = dict()
-        kept_blobs: set[bytes] = set()
-        kept_blobs_size: int = 0
-        discarded_ops: set[bytes] = set()
-        discarded_blobs: set[bytes] = set()
-
-        for timestamp, op_key in self.__log.read_new_to_old():
-            blob_path = self.__get_path(op_key)
-            blob_size = blob_path.stat().st_size
-            blob_key = bytes.fromhex(blob_path.parent.name)
-
-            if blob_key not in kept_blobs and kept_blobs_size + blob_size <= size:
-                kept_blobs.add(blob_key)
-                kept_blobs_size += blob_size
-
-            if blob_key in kept_blobs:
-                if op_key not in kept_ops:
-                    kept_ops[op_key] = timestamp
-            else:
-                discarded_ops.add(op_key)
-                discarded_blobs.add(blob_key)
-
-        for op_key in discarded_ops:
-            self.__discard_op(op_key)
-
-        for blob_key in discarded_blobs:
-            self.__discard_blob(blob_key)
-
-        new_log = Log(self.__log_path.with_suffix(".new"))
-        for op_key, timestamp in reversed(kept_ops.items()):
-            new_log.write(timestamp, op_key)
-
-        self.__log.replace_with(new_log)
-
-    def __discard_op(self, op_key: bytes):
-        op_path = self.__get_op_path(op_key)
-        os.unlink(op_path / "object")
-        os.rmdir(op_path)
-
-    def __discard_blob(self, blob_key: bytes):
-        blob_path = self.__get_blob_path(blob_key)
-        shutil.rmtree(blob_path)
-
-    def prune_to_age(self, timestamp: datetime):
-        """Remove all entries that have not been used after timestamp."""
-        # TODO, sometime...
-        raise NotImplementedError()
-
-    def get_info(self) -> DiskCacheInfo:
-
-        n_ops = 0
-        blob_keys: set[bytes] = set()
-        size_blobs = 0
-
-        for op_path in self.__scan_ops():
-            n_ops += 1
-            object_path = op_path / "object"
-            blob_key = bytes.fromhex(object_path.parent.name)
-
-            if blob_key in blob_keys:
-                continue
-
-            blob_keys.add(blob_key)
-            blob_path = object_path.resolve()
-            size_blobs += blob_path.stat().st_size
-
-        oldest_op = self.__log.oldest_entry()
-        newest_op = self.__log.newest_entry()
-
-        return DiskCacheInfo(
-            path=self.__root,
-            n_ops=n_ops,
-            n_blobs=len(blob_keys),
-            size_blobs=size_blobs,
-            oldest_op=oldest_op[0] if oldest_op else None,
-            newest_op=newest_op[0] if newest_op else None,
-            log_records=self.__log.record_count(),
-        )
-
-    def __prune(self, blobs_to_keep: set[bytes]):
-
-        for op_path in self.__scan_ops():
-            object_path = op_path / "object"
-            blob_key = bytes.fromhex(object_path.parent.name)
-
-            if blob_key in blobs_to_keep:
-                continue
-
-            blob_path = object_path.resolve().parent
-            object_path.resolve().unlink()
-            object_path.unlink()
-            op_path.rmdir()
-            blob_path.rmdir()
-
-    def __scan_ops(self) -> Generator[Path]:
-        for dir1 in os.scandir(self.__ops):
-            for dir2 in os.scandir(dir1):
-                for entry in os.scandir(dir2):
-                    yield Path(entry.path)
-
     @override
     async def has(self, op_key: bytes) -> bool:
         op_path = self.__get_op_path(op_key)
@@ -261,3 +151,98 @@ class DiskCache(Cache):
 
         self.__log.write(datetime.now(), op_key)
         return obj_path
+
+    def prune_to_size(self, size: int):
+
+        kept_ops: dict[bytes, datetime] = dict()
+        kept_blobs: set[bytes] = set()
+        kept_blobs_size: int = 0
+        discarded_ops: set[bytes] = set()
+        discarded_blobs: set[bytes] = set()
+
+        for timestamp, op_key in self.__log.read_new_to_old():
+            blob_path = self.__get_path(op_key)
+            blob_size = blob_path.stat().st_size
+            blob_key = bytes.fromhex(blob_path.parent.name)
+
+            if blob_key not in kept_blobs and kept_blobs_size + blob_size <= size:
+                kept_blobs.add(blob_key)
+                kept_blobs_size += blob_size
+
+            if blob_key in kept_blobs:
+                if op_key not in kept_ops:
+                    kept_ops[op_key] = timestamp
+            else:
+                discarded_ops.add(op_key)
+                discarded_blobs.add(blob_key)
+
+        for op_key in discarded_ops:
+            self.__discard_op(op_key)
+
+        for blob_key in discarded_blobs:
+            self.__discard_blob(blob_key)
+
+        new_log = Log(self.__log_path.with_suffix(".new"))
+        for op_key, timestamp in reversed(kept_ops.items()):
+            new_log.write(timestamp, op_key)
+
+        self.__log.replace_with(new_log)
+
+    def prune_to_age(self, timestamp: datetime):
+        """Remove all entries that have not been used after timestamp."""
+        # TODO, sometime...
+        raise NotImplementedError()
+
+    def get_info(self) -> DiskCacheInfo:
+
+        n_ops = 0
+        blob_keys: set[bytes] = set()
+        size_blobs = 0
+
+        for op_path in self.__scan_ops():
+            n_ops += 1
+            object_path = op_path / "object"
+            blob_key = bytes.fromhex(object_path.parent.name)
+
+            if blob_key in blob_keys:
+                continue
+
+            blob_keys.add(blob_key)
+            blob_path = object_path.resolve()
+            size_blobs += blob_path.stat().st_size
+
+        oldest_op = self.__log.oldest_entry()
+        newest_op = self.__log.newest_entry()
+
+        return DiskCacheInfo(
+            path=self.__root,
+            n_ops=n_ops,
+            n_blobs=len(blob_keys),
+            size_blobs=size_blobs,
+            oldest_op=oldest_op[0] if oldest_op else None,
+            newest_op=newest_op[0] if newest_op else None,
+            log_records=self.__log.record_count(),
+        )
+
+    def __get_op_path(self, op_key: bytes) -> Path:
+        key_parts = string_slices(op_key.hex(), 2, 2)
+        return self.__ops / key_parts[0] / key_parts[1] / op_key.hex()
+
+    def __get_blob_path(self, blob_key: bytes) -> Path:
+        key_parts = string_slices(blob_key.hex(), 2, 2)
+        return self.__blobs / key_parts[0] / key_parts[1] / blob_key.hex()
+
+    def __discard_op(self, op_key: bytes):
+        op_path = self.__get_op_path(op_key)
+        os.unlink(op_path / "object")
+        os.rmdir(op_path)
+
+    def __discard_blob(self, blob_key: bytes):
+        blob_path = self.__get_blob_path(blob_key)
+        shutil.rmtree(blob_path)
+
+    def __scan_ops(self) -> Generator[Path]:
+        for dir1 in os.scandir(self.__ops):
+            for dir2 in os.scandir(dir1):
+                for entry in os.scandir(dir2):
+                    yield Path(entry.path)
