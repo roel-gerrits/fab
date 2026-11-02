@@ -19,6 +19,7 @@ def bytesize2str(size: int) -> str:
 
 
 __suffixes = {
+    "": 1,
     "K": 1024**1,
     "M": 1024**2,
     "G": 1024**3,

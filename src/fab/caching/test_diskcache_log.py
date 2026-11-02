@@ -1,6 +1,7 @@
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
-import random
+
 from .diskcache import Log
 
 ONE_HOUR = timedelta(hours=1)
@@ -11,11 +12,8 @@ def random_key() -> bytes:
 
 
 def test_empty(tmp_path: Path):
-    log1 = Log(tmp_path / "log.log")
-    log1.flush()
-
-    log2 = Log(tmp_path / "log.log")
-    assert list(log2.read_entries()) == []
+    log = Log(tmp_path / "log.log")
+    assert list(log.read_new_to_old()) == []
 
 
 def test_read(tmp_path: Path):
@@ -32,11 +30,10 @@ def test_read(tmp_path: Path):
     log1.write(t0, k0)
     log1.write(t1, k1)
     log1.write(t2, k2)
-    log1.flush()
 
     log2 = Log(tmp_path / "log.log")
 
-    gen = log2.read_entries()
+    gen = log2.read_new_to_old()
     assert next(gen) == (t2, k2)
     assert next(gen) == (t1, k1)
     assert next(gen) == (t0, k0)

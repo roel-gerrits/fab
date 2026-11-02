@@ -68,10 +68,16 @@ async def test_prune_to_size():
         cache = DiskCache(root / "cache_dir")
         op1_key = bytes.fromhex("abcd01")
         op2_key = bytes.fromhex("abcd02")
-        file1 = await cache.store_path(op1_key, create_file(root / "file1", "aaa"))
-        file2 = await cache.store_path(op2_key, create_file(root / "file2", "bbb"))
+        file1 = await cache.store_path(
+            op1_key, create_file(root / "file1", "aa")
+        )  # 2 bytes
+        file2 = await cache.store_path(
+            op2_key, create_file(root / "file2", "bb")
+        )  # 2 bytes
 
-        cache.prune_to_size(3)
+        assert cache.get_info().log_records == 2
+        cache.prune_to_size(3)  # 3 bytes
+        assert cache.get_info().log_records == 1
 
         assert not await cache.has(op1_key)
         assert not file1.exists()

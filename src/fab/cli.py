@@ -241,11 +241,12 @@ async def cli():
 
     def cache_info():
         info = disk_cache.get_info()
-        print(f"root:   {info.path}")
-        print(f"count:  {info.n_ops} ops / {info.n_blobs} blobs")
-        print(f"size:   {bytesize2str(info.size_blobs)}")
-        print(f"oldest: {info.oldest_op or 'n/a'}")
-        print(f"newest: {info.newest_op or 'n/a'}")
+        print(f"root:    {info.path}")
+        print(f"count:   {info.n_ops} ops / {info.n_blobs} blobs")
+        print(f"size:    {bytesize2str(info.size_blobs)}")
+        print(f"oldest:  {info.oldest_op or 'n/a'}")
+        print(f"newest:  {info.newest_op or 'n/a'}")
+        print(f"records: {info.log_records}")
 
     def cache_prune():
         size = str2bytesize(args["<size>"])
