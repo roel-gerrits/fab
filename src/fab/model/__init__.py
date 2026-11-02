@@ -1,9 +1,9 @@
 from .cache import Cache
-from .operation import Operation, OperationContext, OperationError
-from .executor import OperationExecutor
-from .oci import OciContainer, OciClient, OciProcess
-from .outputchunks import StreamType, OutputChunk
 from .errors import CommandFailedError, Error
+from .executor import OperationExecutor
+from .oci import OciClient, OciContainer, OciProcess
+from .operation import Operation, OperationContext, OperationError
+from .outputchunks import OutputChunk, StreamType
 
 __all__ = [
     "Cache",

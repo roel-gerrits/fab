@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 from typing import Any, override
 
@@ -5,8 +6,6 @@ from blake3 import blake3
 
 from ..model import Operation, OperationContext
 from ..util.hash_objects import hash_objects
-
-import shutil
 
 
 class Extract(Operation):

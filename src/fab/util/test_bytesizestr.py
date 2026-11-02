@@ -1,4 +1,4 @@
-from .bytesizestr import bytesize2str, str2bytesize
+from .bytesizestr import str2bytesize
 
 
 def test_str2bytesize():

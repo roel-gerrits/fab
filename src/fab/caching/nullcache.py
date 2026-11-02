@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import override
+
 from ..model import Cache
+
 
 class NullCache(Cache):
     @override

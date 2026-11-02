@@ -1,5 +1,6 @@
-from .string_slices import string_slices
 import pytest
+
+from .string_slices import string_slices
 
 
 def test_string_slices():

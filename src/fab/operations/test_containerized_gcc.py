@@ -9,9 +9,11 @@ from .containerized_gcc import GccLink, _parse_make_deps
 
 
 def test_parse_make_deps():
-    assert list(_parse_make_deps(
-        "main.o: main.cpp lib1.h lib2.h \\\n lib3.h lib4.h \\\n lib5.h path\\ with\\ spaces.h"
-    )) == [
+    assert list(
+        _parse_make_deps(
+            "main.o: main.cpp lib1.h lib2.h \\\n lib3.h lib4.h \\\n lib5.h path\\ with\\ spaces.h"
+        )
+    ) == [
         Path("lib1.h"),
         Path("lib2.h"),
         Path("lib3.h"),
@@ -19,7 +21,6 @@ def test_parse_make_deps():
         Path("lib5.h"),
         Path("path with spaces.h"),
     ]
-
 
 
 async def _empty_chunks() -> AsyncIterator[OutputChunk]:
@@ -126,9 +127,7 @@ async def test_link_options_appended(tmp_path: Path):
     context = RecordingContext(tmp_path)
     obj = tmp_path / "obj.o"
     obj.write_bytes(b"content")
-    op = GccLink(
-        "img", None, "out", [obj], options=["-lm", "-Wl,--as-needed"]
-    )
+    op = GccLink("img", None, "out", [obj], options=["-lm", "-Wl,--as-needed"])
     await op.execute(context)
     assert context.container is not None
     cmd = context.container.cmd

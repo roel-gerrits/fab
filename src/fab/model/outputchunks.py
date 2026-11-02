@@ -1,6 +1,5 @@
-from dataclasses import dataclass
-
 import enum
+from dataclasses import dataclass
 
 
 class StreamType(enum.Enum):

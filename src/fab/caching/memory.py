@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import override
 
-
 from ..model import Cache
+
 
 class MemoryCache(Cache):
     def __init__(self):

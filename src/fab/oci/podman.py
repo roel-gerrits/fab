@@ -14,9 +14,7 @@ The multiplexed exec stream follows the Docker framing protocol:
 
 from __future__ import annotations
 
-import abc
 import asyncio
-import enum
 import json
 import os
 import struct
@@ -27,6 +25,7 @@ import aiohttp
 
 from fab.model import OutputChunk
 
+from ..model import StreamType
 from ..model.oci import (
     ImageNotFoundError,
     OciClient,
@@ -37,7 +36,6 @@ from ..model.oci import (
     PullError,
     PullEvent,
 )
-from ..model import StreamType
 
 # ---------------------------------------------------------------------------
 # Helpers

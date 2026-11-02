@@ -1,8 +1,9 @@
+import pathlib
 from abc import ABC
 from collections.abc import Mapping, Sequence
-import pathlib
 from typing import override
-from .data import Object, Function, EvaluationContext
+
+from .data import EvaluationContext, Function, Object
 
 
 class DictObject(Object):

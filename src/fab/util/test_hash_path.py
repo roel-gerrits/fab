@@ -1,12 +1,16 @@
-from .temp_file_structure import TempFileStructure
-from .hash_path import hash_path
-from pathlib import Path
 import hashlib
+from pathlib import Path
+
 import pytest
+
+from .hash_path import hash_path
+from .temp_file_structure import TempFileStructure
+
 
 def path_key(path: Path) -> str:
     hashfunc = hashlib.sha256()
     return hash_path(hashfunc, path).hex()
+
 
 def test_path():
     with TempFileStructure(

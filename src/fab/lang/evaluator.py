@@ -2,9 +2,9 @@ from collections.abc import Mapping, Sequence
 from typing import override
 
 from ..lang import astree
+from ..model import Error
 from .data import EvaluationContext, Function, List, Object, String
 from .parser import parse
-from ..model import Error
 
 
 class EvaluationError(RuntimeError):

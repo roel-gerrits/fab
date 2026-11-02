@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import Any, override
 
-from ..model import Operation, Error
+from ..model import Error, Operation
 
 
 class Object(ABC):

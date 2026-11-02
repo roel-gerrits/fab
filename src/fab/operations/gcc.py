@@ -1,16 +1,13 @@
 import asyncio
 import json
 from collections.abc import Sequence
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, override
 
 from blake3 import blake3
 
-from fab.lang import data
-
-
-from ..model import Operation, OperationContext 
+from ..model import Operation, OperationContext
 from ..util.hash_objects import hash_objects
 
 

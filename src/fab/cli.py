@@ -19,28 +19,26 @@ Options:
 
 import asyncio
 import subprocess
-from typing import Any, override
-from docopt import docopt
-from pathlib import Path
-from xdg_base_dirs import xdg_data_home
 import tempfile
+from pathlib import Path
+from typing import Any, override
+
+from docopt import docopt
+from xdg_base_dirs import xdg_data_home
 
 from fab.oci.container_admin import ContainerAdmin
 from fab.oci.podman import PodmanClient
 
-
-from .lang.data import List, Object, PathObj
-from .caching import DiskCache, CacheHitCounter
+from .caching import CacheHitCounter, DiskCache
 from .executors.simple_executor import SimpleOperationExecutor
+from .lang.data import List, Object, PathObj
 from .lang.evaluation_context import DefaultEvaluationContext
 from .lang.evaluator import EvaluationError, evaluate_context
 from .model import (
     Cache,
     CommandFailedError,
-    OperationContext,
     OciContainer,
-    OperationError,
-    StreamType,
+    OperationContext,
 )
 from .model.executor import OperationContextFactory
 from .util.bytesizestr import bytesize2str, str2bytesize

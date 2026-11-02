@@ -1,23 +1,21 @@
-from collections.abc import Mapping
 import pathlib
+from collections.abc import Mapping
 from typing import Any, override
 
-from ..lang.data import EvaluationContext, Object
-
-from ..model import Operation, OperationExecutor
-
 from ..lang.buildins import (
+    ContainerizedGcc,
+    ExtractFunc,
+    GccCollectCompileCommandsFunc,
     GccCompileFunc,
     GccLinkFunc,
-    GccCollectCompileCommandsFunc,
+    HttpArchiveFunc,
+    HttpGetFunc,
+    LinkFunc,
     LoadFunc,
     PathFunc,
-    LinkFunc,
-    HttpGetFunc,
-    ExtractFunc,
-    HttpArchiveFunc,
-    ContainerizedGcc,
 )
+from ..lang.data import EvaluationContext, Object
+from ..model import Operation, OperationExecutor
 
 buildins = {
     "load": LoadFunc(),

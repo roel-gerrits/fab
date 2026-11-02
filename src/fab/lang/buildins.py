@@ -3,23 +3,24 @@ from pathlib import Path
 from typing import override
 
 from fab.lang.util import DictObject
-from ..model import OperationError
 
-from ..operations.gcc import GccCompile, GccLink, GccCollectCompileCommands
+from ..model import OperationError
+from ..operations import Extract, HttpArchive, HttpGet
 from ..operations.containerized_gcc import (
     GccCompile as ContainerizedGccCompile,
+)
+from ..operations.containerized_gcc import (
     GccLink as ContainerizedGccLink,
 )
-
-from ..operations import Extract, HttpArchive, HttpGet
+from ..operations.gcc import GccCollectCompileCommands, GccCompile, GccLink
 from .data import (
     EvaluationContext,
     Function,
+    FunctionCallError,
     List,
     Object,
     PathObj,
     String,
-    FunctionCallError,
 )
 from .evaluator import evaluate_context
 

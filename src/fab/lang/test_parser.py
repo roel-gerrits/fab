@@ -1,6 +1,7 @@
 import pytest
 
 from fab.lang.astree import SourcePosition
+
 from .parser import parse
 
 

@@ -4,8 +4,7 @@ from typing import override
 
 from blake3 import blake3
 
-
-from ..model import Operation, OperationContext, CommandFailedError
+from ..model import CommandFailedError, Operation, OperationContext
 from ..util.flatten_list import flatten
 from ..util.hash_objects import hash_objects
 from .gcc import CompileCommandsCollector, CompileObject
@@ -125,7 +124,7 @@ class GccCompile(Operation):
             )
         )
 
-        # First see if we can find the dependencies of this file. If this file has 
+        # First see if we can find the dependencies of this file. If this file has
         # been compiled before its deps are stored under the following key.
         deps_key = hash_objects(
             blake3(),
@@ -139,9 +138,9 @@ class GccCompile(Operation):
         deps_cached = await context.cache_check(deps_key)
 
         if deps_cached:
-            # Deps file is found. Next step is to see if we can reuse the previous build 
+            # Deps file is found. Next step is to see if we can reuse the previous build
             # result, ea: none of the dependencies have changed.
-            # We do that by calculating the key for this source file combined with 
+            # We do that by calculating the key for this source file combined with
             # all the dependencies.
 
             deps_file = await context.cache_load_path(deps_key)
@@ -157,7 +156,7 @@ class GccCompile(Operation):
             )
 
             if await context.cache_check(key):
-                # Dependencies have not changed! Lets load the build result from cache 
+                # Dependencies have not changed! Lets load the build result from cache
                 # and return
                 return await context.cache_load_path(key)
 
