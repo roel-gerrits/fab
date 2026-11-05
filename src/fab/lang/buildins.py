@@ -1,8 +1,9 @@
 from copy import copy
 from pathlib import Path
 from typing import override
+import itertools
 
-from fab.lang.util import DictObject
+from .util import DictObject, wrap_into_function_class
 
 from ..model import OperationError
 from ..operations import Extract, HttpArchive, HttpGet

@@ -3,7 +3,7 @@
 Usage:
     fab [options] (do|run|ls|tree) <target> [--file FILE] [--no-cache] [--no-remote-cache]
     fab [options] list-targets [--file FILE]
-    fab [options] clean-containers
+    fab [options] containers clean
     fab [options] cache info
     fab [options] cache prune <size>
     fab --version
@@ -197,6 +197,7 @@ async def cli():
         try:
             eval_result = evaluate_context(evaluation_context)
             result = await eval_result.get_attr(target)
+            print("Done")
             print(f"Cache stats: {cache.hits} hits, {cache.misses} misses")
         except EvaluationError as e:
             print(format_evaluation_error(e))
@@ -209,7 +210,6 @@ async def cli():
 
     async def do():
         await evaluate_target()
-        print("done")
 
     async def ls():
         result = await evaluate_target()
@@ -233,7 +233,7 @@ async def cli():
         for name in build_object.attrs():
             print(name)
 
-    async def clean_containers():
+    async def containers_clean():
         count = await container_admin.clean_containers()
         print(f"Removed {count} container(s).")
 
@@ -253,8 +253,8 @@ async def cli():
 
     if args["list-targets"]:
         list_targets()
-    elif args["clean-containers"]:
-        await clean_containers()
+    elif args["containers"] and args["clean"]:
+        await containers_clean()
     elif args["do"]:
         await do()
     elif args["ls"]:

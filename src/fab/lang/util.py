@@ -1,9 +1,11 @@
+import itertools
 import pathlib
+import inspect
 from abc import ABC
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, Callable
 from typing import override
 
-from .data import EvaluationContext, Function, Object
+from .data import EvaluationContext, Function, Object, FunctionCallError
 
 
 class DictObject(Object):
@@ -53,3 +55,40 @@ class BaseEvaluationContext(EvaluationContext, ABC):
     @override
     def buildins(self) -> Mapping[str, Object]:
         return self.__buildins
+
+
+def parse_args[T: tuple[type[Object], ...]](args: list[Object], types: T) -> T:
+
+    for num, (arg, arg_type) in enumerate(itertools.zip_longest(args, types), 1):
+        if arg is None:
+            raise FunctionCallError(f"Argument {num} is missing.")
+        if arg_type is None:
+            raise FunctionCallError(f"Did not expect argument {num}.")
+        if type(arg) != arg_type:
+            raise FunctionCallError(
+                f"Argument {num} must be of type {arg_type.__name__}, got {type(arg).__name__} instead."
+            )
+
+    return tuple(args)  # ty: ignore[invalid-return-type]
+
+
+def wrap_into_function_class(f):
+    parameters = list(inspect.signature(f).parameters.values())
+    if len(parameters) < 1 or parameters[0].annotation != EvaluationContext:
+        raise TypeError(f"First argument must be of type {EvaluationContext}")
+
+    arg_types = [p.annotation for p in parameters[1:]]
+
+    class FunctionImpl(Function):
+        async def call(
+            self,
+            context: EvaluationContext,
+            args: list[Object],
+            kwargs: dict[str, Object],
+        ) -> Object:
+
+            validated_args = parse_args(args, tuple(arg_types))
+
+            return f(context, *validated_args)
+
+    return FunctionImpl

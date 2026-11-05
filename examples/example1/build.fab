@@ -21,7 +21,3 @@ exe = toolchain.link("main", objs)
 
 compile_commands = link(gcc_collect_compile_commands(exe))
 
-tool = containerized_tool(
-    "image",
-    "some_tool <arg1> <arg2>",
-)
