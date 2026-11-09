@@ -39,6 +39,7 @@ from .model import (
     CommandFailedError,
     OciContainer,
     OperationContext,
+    OperationError,
 )
 from .model.executor import OperationContextFactory
 from .util.bytesizestr import bytesize2str, str2bytesize
@@ -153,7 +154,13 @@ def format_evaluation_error(error: EvaluationError) -> str:
 
         for chunk in error.cause.output:
             output.append(chunk.chunk.decode())
+    elif isinstance(error.cause, OperationError):
+        output.append(f"Operation error: {error.cause.error_line}\n")
+        output.append(error.cause.error_msg)
+        output.append("\n")
+
     else:
+        output.append(f"Cause: {type(error.cause).__name__}\n")
         output.append(str(error))
 
     return "".join(output)

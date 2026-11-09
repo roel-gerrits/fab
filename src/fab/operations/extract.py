@@ -4,7 +4,7 @@ from typing import Any, override
 
 from blake3 import blake3
 
-from ..model import Operation, OperationContext
+from ..model import Operation, OperationContext, OperationError
 from ..util.hash_objects import hash_objects
 
 
@@ -23,7 +23,10 @@ class Extract(Operation):
         extract_dir = sandbox / self.__archive.name
         extract_dir.mkdir()
 
-        shutil.unpack_archive(self.__archive, extract_dir)
+        try:
+            shutil.unpack_archive(self.__archive, extract_dir)
+        except IOError as e:
+            raise OperationError("Failed to unpack archive", str(e))
 
         cached_path = await context.cache_store_path(key, extract_dir)
 

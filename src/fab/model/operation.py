@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+from fab.model import Error
 from fab.model.oci import OciContainer
 
 
@@ -48,7 +49,7 @@ class Operation(ABC):
     async def execute(self, context: OperationContext) -> Any: ...
 
 
-class OperationError(RuntimeError):
+class OperationError(Error):
     error_line: str
     error_msg: str
 
