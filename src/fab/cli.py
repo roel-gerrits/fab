@@ -1,7 +1,7 @@
 """Fabulous builder.
 
 Usage:
-    fab [options] (do|run|ls|tree) <target> [--file FILE] [--no-cache] [--no-remote-cache]
+    fab [options] (do|run|ls|tree|cat) <target> [--file FILE] [--no-cache] [--no-remote-cache]
     fab [options] list-targets [--file FILE]
     fab [options] containers clean
     fab [options] cache info
@@ -19,6 +19,7 @@ Options:
 
 import asyncio
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, override
@@ -204,8 +205,6 @@ async def cli():
         try:
             eval_result = evaluate_context(evaluation_context)
             result = await eval_result.get_attr(target)
-            print("Done")
-            print(f"Cache stats: {cache.hits} hits, {cache.misses} misses")
         except EvaluationError as e:
             print(format_evaluation_error(e))
             return None
@@ -217,6 +216,7 @@ async def cli():
 
     async def do():
         await evaluate_target()
+        print(f"Cache stats: {cache.hits} hits, {cache.misses} misses")
 
     async def ls():
         result = await evaluate_target()
@@ -233,7 +233,13 @@ async def cli():
             print(f"Target '{target}' does not evaluate to a Path")
             return
 
-        subprocess.run(result.path)
+    async def cat():
+        result = await evaluate_target()
+        if not isinstance(result, PathObj):
+            print(f"Target '{target}' does not evaluate to a Path")
+            return
+        sys.stdout.buffer.write(result.path.read_bytes())
+        sys.stdout.flush()
 
     def list_targets():
         build_object = evaluate_context(evaluation_context)
@@ -268,6 +274,8 @@ async def cli():
         await ls()
     elif args["run"]:
         await run()
+    elif args["cat"]:
+        await cat()
     elif args["cache"] and args["info"]:
         cache_info()
     elif args["cache"] and args["prune"]:
