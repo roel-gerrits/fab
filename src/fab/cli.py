@@ -1,7 +1,7 @@
 """Fabulous builder.
 
 Usage:
-    fab [options] (do|run|ls|tree|cat) <target> [--file FILE] [--no-cache] [--no-remote-cache]
+    fab [options] (do|run|ls|tree|cat|print) <target> [--file FILE] [--no-cache] [--no-remote-cache]
     fab [options] list-targets [--file FILE]
     fab [options] containers clean
     fab [options] cache info
@@ -32,7 +32,7 @@ from fab.oci.podman import PodmanClient
 
 from .caching import CacheHitCounter, DiskCache
 from .executors.simple_executor import SimpleOperationExecutor
-from .lang.data import List, Object, PathObj
+from .lang.data import List, Object, PathObj, String
 from .lang.evaluation_context import DefaultEvaluationContext
 from .lang.evaluator import EvaluationError, evaluate_context
 from .model import (
@@ -124,11 +124,14 @@ class MainOperationContextFactory(OperationContextFactory):
 def print_result(result: Object):
     if isinstance(result, PathObj):
         print(result.path)
+    elif isinstance(result, String):
+        print(result.value)
     elif isinstance(result, List):
-        print("list:")
+        print("[")
         for item in result.items:
             if isinstance(item, PathObj):
-                print(f"  {item.path}")
+                print(f"  {item.path},")
+        print("]")
 
 
 def format_evaluation_error(error: EvaluationError) -> str:
@@ -241,6 +244,10 @@ async def cli():
         sys.stdout.buffer.write(result.path.read_bytes())
         sys.stdout.flush()
 
+    async def print_():
+        result = await evaluate_target()
+        print_result(result)
+
     def list_targets():
         build_object = evaluate_context(evaluation_context)
         for name in build_object.attrs():
@@ -276,6 +283,8 @@ async def cli():
         await run()
     elif args["cat"]:
         await cat()
+    elif args["print"]:
+        await print_()
     elif args["cache"] and args["info"]:
         cache_info()
     elif args["cache"] and args["prune"]:
