@@ -8,11 +8,13 @@ from ..lang.buildins import (
     GccCollectCompileCommandsFunc,
     GccCompileFunc,
     GccLinkFunc,
+    GlobFunc,
     HttpArchiveFunc,
     HttpGetFunc,
     LinkFunc,
     LoadFunc,
     PathFunc,
+    SubpathFunc,
 )
 from ..lang.data import EvaluationContext, Object
 from ..model import Operation, OperationExecutor
@@ -24,6 +26,8 @@ buildins = {
     "http_get": HttpGetFunc(),
     "extract": ExtractFunc(),
     "http_archive": HttpArchiveFunc(),
+    "glob": GlobFunc(),
+    "subpath": SubpathFunc(),
     "gcc_compile": GccCompileFunc(),
     "gcc_link": GccLinkFunc(),
     "gcc_collect_compile_commands": GccCollectCompileCommandsFunc(),

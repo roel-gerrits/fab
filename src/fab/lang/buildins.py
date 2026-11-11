@@ -1,9 +1,7 @@
+import glob
 from copy import copy
 from pathlib import Path
 from typing import override
-import itertools
-
-from .util import DictObject, wrap_into_function_class
 
 from ..model import OperationError
 from ..operations import Extract, HttpArchive, HttpGet
@@ -24,6 +22,7 @@ from .data import (
     String,
 )
 from .evaluator import evaluate_context
+from .util import DictObject, wrap_into_function_class
 
 
 class LoadFunc(Function):
@@ -116,6 +115,54 @@ class HttpArchiveFunc(Function):
         op = HttpArchive(url)
         result = await context.execute_operation(op)
         return PathObj(result)
+
+
+class SubpathFunc(Function):
+    @override
+    async def call(
+        self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
+    ) -> Object:
+
+        path_arg = args[0]
+        assert isinstance(path_arg, PathObj)
+
+        subpath_arg = args[1]
+        assert isinstance(subpath_arg, String)
+
+        path = path_arg.path / subpath_arg.value
+        if not path.exists():
+            raise FunctionCallError(f"Subpath {subpath_arg.value} does not exist")
+
+        return PathObj(path)
+
+
+class GlobFunc(Function):
+    @override
+    async def call(
+        self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
+    ) -> Object:
+
+        pattern_arg = args[0]
+        paths: list[Path] = []
+        for path_arg in args[1:]:
+            if isinstance(path_arg, PathObj):
+                paths.append(path_arg.path)
+            elif isinstance(path_arg, List):
+                for item in path_arg.items:
+                    if not isinstance(item, PathObj):
+                        raise FunctionCallError("Expected path or list of paths")
+                    paths.append(item.path)
+
+        assert isinstance(pattern_arg, String)
+        pattern = pattern_arg.value
+
+        entries = []
+        for p in paths:
+            for entry in glob.glob(pattern, root_dir=p, recursive=True):
+                entry_path = p / entry
+                entries.append(PathObj(entry_path))
+
+        return List(entries)
 
 
 class GccCompileFunc(Function):
