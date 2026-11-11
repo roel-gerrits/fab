@@ -88,8 +88,12 @@ class MainOperationContextFactory(OperationContextFactory):
                 )
 
             @override
-            def report_progress(self):
-                raise NotImplementedError()
+            def report_state(self, state: str):
+                print(f"State: {state}")
+
+            @override
+            def report_progress(self, done: int, total: int | None = None):
+                print(f"Progress: {done}/{total}")
 
             @override
             async def cache_check(self, key: bytes) -> bool:

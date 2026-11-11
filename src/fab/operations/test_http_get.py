@@ -27,8 +27,11 @@ class DummyOperationContext(OperationContext):
         raise NotImplementedError
 
     @override
-    def report_progress(self):
+    def report_state(self, state: str):
         pass
+
+    @override
+    def report_progress(self, done: int, total: int | None = None): ...
 
     @override
     async def cache_check(self, key: bytes) -> bool:

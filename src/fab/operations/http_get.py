@@ -22,6 +22,7 @@ class HttpGet(Operation):
         if await context.cache_check(key):
             return await context.cache_load_path(key)
 
+        context.report_state("Downloading")
         sandbox = context.get_sandbox()
         download_result = sandbox / parsed_url.name
         try:
@@ -29,8 +30,13 @@ class HttpGet(Operation):
                 async with aiohttp.ClientSession(trust_env=True) as session:
                     async with session.get(parsed_url) as resp:
                         resp.raise_for_status()
+
+                        total = int(resp.headers["Content-length"])
+                        done = 0
                         async for chunk in resp.content.iter_chunked(1024 * 32):
                             f.write(chunk)
+                            done += len(chunk)
+                            context.report_progress(done, total)
 
         except aiohttp.ClientError as e:
             raise OperationError(f"Failed to get resource: {type(e).__name__}", str(e))

@@ -93,8 +93,11 @@ class RecordingContext(OperationContext):
         return self.container
 
     @override
-    def report_progress(self) -> None:
-        raise NotImplementedError
+    def report_state(self, state: str):
+        pass
+
+    @override
+    def report_progress(self, done: int, total: int | None = None): ...
 
     @override
     async def cache_check(self, key: bytes) -> bool:
