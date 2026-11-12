@@ -31,7 +31,9 @@ class HttpGet(Operation):
                     async with session.get(parsed_url) as resp:
                         resp.raise_for_status()
 
-                        total = int(resp.headers["Content-length"])
+                        content_length = resp.headers.get("Content-length")
+                        total = int(content_length) if content_length else None
+
                         done = 0
                         async for chunk in resp.content.iter_chunked(1024 * 32):
                             f.write(chunk)

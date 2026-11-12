@@ -211,12 +211,13 @@ async def cli():
     async def evaluate_target():
         try:
             eval_result = evaluate_context(evaluation_context)
+            if not eval_result.has_attr(target):
+                print(f"No target named {target}")
+                return None
             result = await eval_result.get_attr(target)
+
         except EvaluationError as e:
             print(format_evaluation_error(e))
-            return None
-        except KeyError as e:
-            print(f"No target named {target}")
             return None
 
         return result
