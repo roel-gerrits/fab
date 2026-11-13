@@ -22,7 +22,7 @@ from .data import (
     String,
 )
 from .evaluator import evaluate_context
-from .util import DictObject, wrap_into_function_class
+from .util import DictObject, wrap_into_function_class, parse_args
 
 
 class LoadFunc(Function):
@@ -47,8 +47,8 @@ class PathFunc(Function):
     async def call(
         self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
     ) -> Object:
-        assert isinstance(args[0], String)
-        path_str = args[0].value
+        path_arg, = parse_args(args, (String, ))  
+        path_str = path_arg.value
         working_dir = context.get_current_file().parent
         path = working_dir / path_str
         if not path.exists():

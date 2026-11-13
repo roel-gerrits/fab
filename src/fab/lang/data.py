@@ -40,11 +40,48 @@ class String(Object):
         return f'<String "{self.value}">'
 
 
-class List(Object):
+class ObjectWithMethods(Object):
+    def __init__(self):
+        self.__methods: dict[str, Function] = {}
+
+    def add_method(self, name: str, func: Function):
+        assert name not in self.__methods
+        self.__methods[name] = func
+
+    def has_attr(self, name: str) -> bool:
+        return name in self.__methods
+
+    def attrs(self) -> Sequence[str]:
+        return list(self.__methods.keys())
+
+    async def get_attr(self, name: str) -> Object:
+        return self.__methods[name]
+
+
+class List(ObjectWithMethods):
     items: Sequence[Object]
 
     def __init__(self, items: Sequence[Object]) -> None:
+        super().__init__()
         self.items = items
+
+        class MapFunc(Function):
+            @override
+            async def call(
+                self,
+                context: EvaluationContext,
+                args: list[Object],
+                kwargs: dict[str, Object],
+            ) -> Object:
+                map_func = args[0]
+                assert isinstance(map_func, Function)
+
+                mapped_items = [
+                    await map_func.call(context, [item], {}) for item in items
+                ]
+                return List(mapped_items)
+
+        self.add_method("map", MapFunc())
 
     @override
     def __eq__(self, other: object, /) -> bool:
