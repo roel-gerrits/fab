@@ -1,26 +1,18 @@
 from __future__ import annotations
+import glob
 
 import pathlib
-from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
-from typing import Any, override
+from collections.abc import Sequence
+from typing import override
 
-from ..model import Error, Operation
-
-
-class Object(ABC):
-    def has_attr(self, name: str) -> bool:
-        return False
-
-    def attrs(self) -> Sequence[str]:
-        return []
-
-    async def get_attr(self, name: str) -> Object:
-        raise KeyError
-
-    @override
-    def __eq__(self, value: object, /) -> bool:
-        raise NotImplementedError
+from .data_base import (
+    EvaluationContext,
+    Function,
+    FunctionCallError,
+    Object,
+    ObjectWithMethods,
+)
+from .util import parse_args
 
 
 class String(Object):
@@ -38,24 +30,6 @@ class String(Object):
     @override
     def __repr__(self) -> str:
         return f'<String "{self.value}">'
-
-
-class ObjectWithMethods(Object):
-    def __init__(self):
-        self.__methods: dict[str, Function] = {}
-
-    def add_method(self, name: str, func: Function):
-        assert name not in self.__methods
-        self.__methods[name] = func
-
-    def has_attr(self, name: str) -> bool:
-        return name in self.__methods
-
-    def attrs(self) -> Sequence[str]:
-        return list(self.__methods.keys())
-
-    async def get_attr(self, name: str) -> Object:
-        return self.__methods[name]
 
 
 class List(ObjectWithMethods):
@@ -90,11 +64,53 @@ class List(ObjectWithMethods):
         return self.items == other.items
 
 
-class PathObj(Object):
+class PathObj(ObjectWithMethods):
     path: pathlib.Path
 
     def __init__(self, path: pathlib.Path) -> None:
+        super().__init__()
         self.path = path
+
+        class SubpathFunc(Function):
+            @override
+            async def call(
+                self,
+                context: EvaluationContext,
+                args: list[Object],
+                kwargs: dict[str, Object],
+            ) -> Object:
+                (subpath_arg,) = parse_args(args, (String,))
+
+                new_path = path / subpath_arg.value
+
+                if not new_path.exists():
+                    raise FunctionCallError(
+                        f"Subpath '{subpath_arg.value}' ({new_path}) does not exist"
+                    )
+                return PathObj(new_path)
+
+        self.add_method("subpath", SubpathFunc())
+
+        class GlobFunc(Function):
+            @override
+            async def call(
+                self,
+                context: EvaluationContext,
+                args: list[Object],
+                kwargs: dict[str, Object],
+            ) -> Object:
+                (pattern_arg,) = parse_args(args, (String,))
+
+                entries = []
+                for entry in glob.glob(
+                    pattern_arg.value, root_dir=path, recursive=True
+                ):
+                    entry_path = path / entry
+                    entries.append(PathObj(entry_path))
+
+                return List(entries)
+
+        self.add_method("glob", GlobFunc())
 
     @override
     def __eq__(self, other: object, /) -> bool:
@@ -103,27 +119,27 @@ class PathObj(Object):
         return self.path == other.path
 
 
-class EvaluationContext(ABC):
-    @abstractmethod
-    def apply_filename(self, path: pathlib.Path) -> None: ...
-
-    @abstractmethod
-    def get_current_file(self) -> pathlib.Path: ...
-
-    @abstractmethod
-    async def execute_operation(self, operation: Operation) -> Any: ...
-
-    @property
-    @abstractmethod
-    def buildins(self) -> Mapping[str, Object]: ...
-
-
-class FunctionCallError(Error):
-    pass
-
-
-class Function(Object, ABC):
-    @abstractmethod
-    async def call(
-        self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
-    ) -> Object: ...
+# class EvaluationContext(ABC):
+#     @abstractmethod
+#     def apply_filename(self, path: pathlib.Path) -> None: ...
+#
+#     @abstractmethod
+#     def get_current_file(self) -> pathlib.Path: ...
+#
+#     @abstractmethod
+#     async def execute_operation(self, operation: Operation) -> Any: ...
+#
+#     @property
+#     @abstractmethod
+#     def buildins(self) -> Mapping[str, Object]: ...
+#
+#
+# class FunctionCallError(Error):
+#     pass
+#
+#
+# class Function(Object, ABC):
+#     @abstractmethod
+#     async def call(
+#         self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
+#     ) -> Object: ...

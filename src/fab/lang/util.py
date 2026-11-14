@@ -1,11 +1,11 @@
+import inspect
 import itertools
 import pathlib
-import inspect
 from abc import ABC
-from collections.abc import Mapping, Sequence, Callable
+from collections.abc import Callable, Mapping, Sequence
 from typing import override
 
-from .data import EvaluationContext, Function, Object, FunctionCallError
+from .data_base import EvaluationContext, Function, FunctionCallError, Object
 
 
 class DictObject(Object):

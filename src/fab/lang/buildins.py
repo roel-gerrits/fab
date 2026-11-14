@@ -47,7 +47,7 @@ class PathFunc(Function):
     async def call(
         self, context: EvaluationContext, args: list[Object], kwargs: dict[str, Object]
     ) -> Object:
-        path_arg, = parse_args(args, (String, ))  
+        (path_arg,) = parse_args(args, (String,))
         path_str = path_arg.value
         working_dir = context.get_current_file().parent
         path = working_dir / path_str
