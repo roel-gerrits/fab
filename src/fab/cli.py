@@ -30,7 +30,7 @@ from xdg_base_dirs import xdg_data_home
 from fab.oci.container_admin import ContainerAdmin
 from fab.oci.podman import PodmanClient
 
-from .caching import CacheHitCounter, DiskCache
+from .caching import CacheHitCounter, DiskCache, AnonCache
 from .executors.simple_executor import SimpleOperationExecutor
 from .lang.data import List, Object, PathObj, String
 from .lang.evaluation_context import DefaultEvaluationContext
@@ -176,39 +176,34 @@ def format_evaluation_error(error: EvaluationError) -> str:
 
 async def cli():
     data_home = xdg_data_home() / "fab"
+    disk_cache_location = data_home / "cache"
     args: dict[str, str] = docopt(__doc__)
-    # print(args)
-
-    # disk_cache = HitCounter(DiskCache(...))
-    # remote_cache = HitCounter(RemoteCache(...))
-    # combi_cache = ChainedCache(disk_cache, remote_cache)
-    disk_cache = DiskCache(data_home / "cache")
-    cache = CacheHitCounter(disk_cache)
-
-    # ui = Tui(disk_cache_counter, remote_cache_counter)
-
-    podman_client = PodmanClient()
-    container_admin = ContainerAdmin(podman_client)
-    # oci_container_admin = OciContainerAdmin(...)
-    #
-    # sandbox_admin = SandboxAdmin(...)
-
-    operation_context_factory = MainOperationContextFactory(
-        cache,
-        data_home / "sandbox",
-        container_admin,
-    )
-
-    operation_executor = SimpleOperationExecutor(operation_context_factory)
-
-    evaluation_context = DefaultEvaluationContext(
-        Path(args["--file"]),
-        operation_executor,
-    )
 
     target: str = args["<target>"]
 
     async def evaluate_target():
+        disk_cache = DiskCache(disk_cache_location)
+        cache = CacheHitCounter(disk_cache)
+
+        if args["--no-cache"]:
+            # Ha fooled, ya! Even with --no-cache, we still use the cache, but we wrap it witha anonymity layer that randomizes all op_key's so that effectivly all lookups will be no-hits. This way we can still use the cache to store the result and return a path to the user.
+            cache = AnonCache(cache)
+
+        podman_client = PodmanClient()
+        container_admin = ContainerAdmin(podman_client)
+
+        operation_context_factory = MainOperationContextFactory(
+            cache,
+            data_home / "sandbox",
+            container_admin,
+        )
+
+        operation_executor = SimpleOperationExecutor(operation_context_factory)
+
+        evaluation_context = DefaultEvaluationContext(
+            Path(args["--file"]),
+            operation_executor,
+        )
         try:
             eval_result = evaluate_context(evaluation_context)
             if not eval_result.has_attr(target):
@@ -220,11 +215,12 @@ async def cli():
             print(format_evaluation_error(e))
             return None
 
+        await podman_client.aclose()
+
         return result
 
     async def do():
         await evaluate_target()
-        print(f"Cache stats: {cache.hits} hits, {cache.misses} misses")
 
     async def ls():
         result = await evaluate_target()
@@ -254,15 +250,23 @@ async def cli():
         print_result(result)
 
     def list_targets():
+        evaluation_context = DefaultEvaluationContext(
+            Path(args["--file"]),
+            None,
+        )
         build_object = evaluate_context(evaluation_context)
         for name in build_object.attrs():
             print(name)
 
     async def containers_clean():
+        podman_client = PodmanClient()
+        container_admin = ContainerAdmin(podman_client)
         count = await container_admin.clean_containers()
         print(f"Removed {count} container(s).")
+        await podman_client.aclose()
 
     def cache_info():
+        disk_cache = DiskCache(disk_cache_location)
         info = disk_cache.get_info()
         print(f"root:    {info.path}")
         print(f"count:   {info.n_ops} ops / {info.n_blobs} blobs")
@@ -272,6 +276,7 @@ async def cli():
         print(f"records: {info.log_records}")
 
     def cache_prune():
+        disk_cache = DiskCache(disk_cache_location)
         size = str2bytesize(args["<size>"])
         print(f"Pruning to {bytesize2str(size)}")
         disk_cache.prune_to_size(size)
@@ -296,8 +301,6 @@ async def cli():
         cache_prune()
     else:
         print(args)
-
-    await podman_client.aclose()
 
 
 def main():

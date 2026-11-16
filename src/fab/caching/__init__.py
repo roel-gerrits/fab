@@ -1,6 +1,7 @@
+from .anon_cache import AnonCache
 from .diskcache import DiskCache
 from .hit_counter import CacheHitCounter
 from .memory import MemoryCache
 from .nullcache import NullCache
 
-__all__ = ["MemoryCache", "NullCache", "DiskCache", "CacheHitCounter"]
+__all__ = ["AnonCache", "CacheHitCounter", "DiskCache", "MemoryCache", "NullCache"]

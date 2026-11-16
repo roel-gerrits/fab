@@ -43,6 +43,14 @@ from ..model.oci import (
 
 _API_VERSION = "v1.41"
 
+# Podman's Docker-compatible API does not propagate a container's OOM score to
+# the exec sessions it creates.  An exec session therefore defaults to 0, which
+# a rootless crun cannot apply when the API service inherits a higher
+# oom_score_adj_min (e.g. 100 from systemd's user@.service).  crun then aborts
+# the exec with "write to /proc/self/oom_score_adj: Permission denied".
+# Setting an explicit score on the container makes its exec sessions inherit it.
+_DEFAULT_OOM_SCORE_ADJ = 200
+
 
 def _default_socket_path() -> str:
     """Return the best-guess Podman socket path for the current user."""
@@ -297,9 +305,12 @@ class PodmanClient(OciClient):
         if labels:
             body["Labels"] = dict(labels)
 
+        host_config: dict[str, Any] = {}
         if bind_mounts:
             # HostConfig.Binds uses "host_path:container_path[:options]" strings
-            body["HostConfig"] = {"Binds": [f"{src}:{dst}" for src, dst in bind_mounts]}
+            host_config["Binds"] = [f"{src}:{dst}" for src, dst in bind_mounts]
+        host_config["OomScoreAdj"] = _DEFAULT_OOM_SCORE_ADJ
+        body["HostConfig"] = host_config
 
         url = f"http://localhost/{_API_VERSION}/containers/create"
         params = {}
